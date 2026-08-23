@@ -1,0 +1,278 @@
+/* ==========================================================================
+   Review & Audit Center Styles - Clean Enterprise Light Theme
+   ========================================================================== */
+
+.review-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--bg-app);
+}
+
+.review-header {
+  height: 52px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.review-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Left: Diff Viewer (60% width) */
+.review-left-pane {
+  flex: 6;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-surface);
+}
+
+.diff-header {
+  height: 42px;
+  background: var(--bg-surface-subtle);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.diff-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-box {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend-box.deleted {
+  background: #fecaca;
+  border: 1px solid #f87171;
+}
+
+.legend-box.added {
+  background: #bbf7d0;
+  border: 1px solid #4ade80;
+}
+
+.legend-box.param {
+  background: #fef08a;
+  border: 1px solid #facc15;
+}
+
+#monaco-diff-container {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Right: Audit Checklist & Risk Indicators (40% width) */
+.review-right-pane {
+  flex: 4;
+  min-width: 360px;
+  max-width: 520px;
+  overflow-y: auto;
+  padding: 16px 20px 80px 20px;
+  background: var(--bg-app);
+}
+
+/* Risk Indicator Cards */
+.risk-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-xs);
+}
+
+.risk-card.danger-risk {
+  border-left: 4px solid var(--danger);
+}
+
+.risk-card.warning-risk {
+  border-left: 4px solid var(--warning);
+}
+
+.risk-card.success-risk {
+  border-left: 4px solid var(--success);
+}
+
+.risk-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.risk-items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* Proof & Execution Screenshot Card */
+.proof-thumbnail-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.proof-thumbnail {
+  width: 140px;
+  height: 80px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.proof-thumbnail:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
+
+/* Audit Timeline */
+.timeline {
+  position: relative;
+  padding-left: 20px;
+  margin-top: 12px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--border-color);
+}
+
+.timeline-step {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.timeline-step:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -20px;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 2px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-dot.success {
+  border-color: var(--success);
+  background: var(--success-light);
+}
+
+.timeline-dot.danger {
+  border-color: var(--danger);
+  background: var(--danger-light);
+}
+
+.timeline-content {
+  font-size: 12px;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.timeline-user {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.timeline-time {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.timeline-comment {
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-top: 4px;
+  color: var(--text-secondary);
+}
+
+/* Fixed Bottom Action Bar */
+.review-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 100;
+}
+
+.review-info-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

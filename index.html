@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Template 管理平台 - DataStudio</title>
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/catalog.css">
+  <link rel="stylesheet" href="css/studio.css">
+  <link rel="stylesheet" href="css/review.css">
+</head>
+<body>
+
+  <!-- Top Global Navigation Bar -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-logo">DS</div>
+      <span class="brand-title">DataStudio SQL Platform</span>
+      <span class="brand-badge">Enterprise v2.4</span>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="header-nav">
+      <button class="nav-item active" data-view="catalog">
+        <span>📊 資產目錄 (Catalog)</span>
+      </button>
+      <button class="nav-item" data-view="studio">
+        <span>⚡ SQL Studio 工作台</span>
+      </button>
+      <button class="nav-item" data-view="review">
+        <span>🛡️ 審核中心 (Review)</span>
+        <span class="nav-count" id="nav-review-count">1</span>
+      </button>
+    </nav>
+
+    <!-- Global Header Actions -->
+    <div class="header-actions">
+      <button class="btn btn-outline btn-xs" id="btn-reset-demo-data" title="將 Mock 資料重設為初始狀態">
+        🔄 重設展示資料
+      </button>
+      <div class="user-tag">
+        <div class="user-avatar">JD</div>
+        <span>John Doe (Data Architect)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Viewport Main Container -->
+  <main id="app-main">
+    <!-- View 1: Catalog Hub -->
+    <div id="view-catalog" class="view-container active"></div>
+
+    <!-- View 2: SQL Studio -->
+    <div id="view-studio" class="view-container"></div>
+
+    <!-- View 3: Review Center -->
+    <div id="view-review" class="view-container"></div>
+  </main>
+
+  <!-- Global Modal: API Sample -->
+  <div class="modal-overlay" id="api-modal-overlay">
+    <div class="modal-container" style="max-width: 680px;">
+      <div class="modal-header">
+        <div class="modal-title">⚡ API 調用範例 (API Code Snippet)</div>
+        <button class="btn btn-outline btn-xs" id="btn-close-api-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;" id="api-modal-tpl-name">
+          -
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <button class="btn btn-outline btn-xs api-tab-btn active" data-lang="curl">cURL</button>
+          <button class="btn btn-outline btn-xs api-tab-btn" data-lang="python">Python (Requests)</button>
+          <button class="btn btn-outline btn-xs api-tab-btn" data-lang="java">Java 11+ (HttpClient)</button>
+        </div>
+        <pre id="api-modal-code" style="background:#0f172a; color:#f8fafc; padding:14px; border-radius:var(--radius-md); font-family:var(--font-mono); font-size:12px; line-height:1.5; overflow-x:auto; max-height:280px;"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" id="api-modal-copy-btn">📋 複製代碼</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Modal: Reject Reason Comment -->
+  <div class="modal-overlay" id="reject-modal-overlay">
+    <div class="modal-container" style="max-width: 480px;">
+      <div class="modal-header" style="background:#fff1f2; border-bottom-color:#fecdd3;">
+        <div class="modal-title" style="color:#9f1239;">❌ 退回審核申請 (Reject)</div>
+        <button class="btn btn-outline btn-xs" id="btn-close-reject-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">
+            <span>退回原因說明<span class="required">* (必填)</span></span>
+          </label>
+          <textarea class="form-textarea" id="reject-reason-input" rows="4" placeholder="請詳細說明退回修正的原因（如：缺少索引可能導致全表掃描、未遮蔽手機號碼 PII、缺少特定部門權限綁定等）..."></textarea>
+          <div class="form-hint">提交者將在工作台與時間軸看到此退回紀錄，修正後可重新送審。</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline btn-sm" id="btn-cancel-reject-modal">取消</button>
+        <button class="btn btn-danger btn-sm" id="reject-modal-confirm-btn">確認退回</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- App Entry Point -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
