@@ -1,56 +1,376 @@
 /* ==========================================================================
-   Review & Audit Center Styles - Clean Enterprise Light Theme
+   Review Center Styles - Ant Design Enterprise Light Theme
    ========================================================================== */
 
 .review-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--bg-app);
+  background-color: #f5f7fa;
+  overflow-y: auto;
+  padding: 20px 24px;
 }
 
-.review-header {
-  height: 52px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0 20px;
+/* User Switcher in Header */
+.user-switcher-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-subtle);
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.user-switcher-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.user-switcher-select {
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-color: transparent;
+  background: transparent;
+  cursor: pointer;
+}
+
+.user-switcher-select:focus {
+  outline: none;
+}
+
+/* Review Page Header */
+.review-page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
+  margin-bottom: 20px;
 }
 
-.review-header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.review-select-wrapper {
+.review-page-title-group h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.review-body {
+.review-page-title-group p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Stats Overview Cards - Clean Ant Design Minimal Style */
+.review-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.review-stat-card {
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.review-stat-card:hover {
+  border-color: #d9d9d9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.review-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-stat-label {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 2px;
+}
+
+.review-stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f1f1f;
+  line-height: 1.2;
+  font-family: var(--font-mono);
+}
+
+.review-stat-desc {
+  font-size: 11px;
+  color: #bfbfbf;
+  margin-top: 2px;
+}
+
+.review-stat-icon-wrap {
+  display: none; /* 移除佔版面的大色塊字卡，保持極簡商務感 */
+}
+
+/* Ant Design Style Main Card & Tabs */
+.review-main-card {
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 420px;
+}
+
+/* Ant Design Nav Tabs */
+.ant-tabs-nav {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 16px;
+  background: #ffffff;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.ant-tab-item {
+  position: relative;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #595959;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+}
+
+.ant-tab-item:hover {
+  color: #1677ff;
+}
+
+.ant-tab-item.active {
+  color: #1677ff;
+  font-weight: 600;
+}
+
+.ant-tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #1677ff;
+}
+
+.ant-tab-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #f5f5f5;
+  color: #8c8c8c;
+  font-family: var(--font-mono);
+}
+
+.ant-tab-item.active .ant-tab-badge {
+  background: #e6f4ff;
+  color: #1677ff;
+}
+
+.ant-tab-badge.highlight {
+  background: #fff1f0;
+  color: #cf1322;
+}
+
+/* Tab Content & Toolbar */
+.review-tab-content {
+  padding: 16px 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.review-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.review-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.review-search-input {
+  max-width: 320px;
+}
+
+.review-filter-select {
+  width: 140px;
+}
+
+/* Ant Table Styling */
+.ant-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+}
+
+.ant-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.ant-table th {
+  background: #fafafa;
+  color: #262626;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+}
+
+.ant-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #262626;
+  transition: background 0.2s;
+}
+
+.ant-table-row {
+  cursor: pointer;
+}
+
+.ant-table-row:hover td {
+  background: #f6faff;
+}
+
+.ant-table-row:last-child td {
+  border-bottom: none;
+}
+
+.table-empty-box {
+  padding: 48px 16px;
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.table-empty-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+/* Ant Design Tag Styles - Clean Minimal Soft Colors */
+.ant-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 0 7px;
+  border-radius: 3px;
+  line-height: 20px;
+  white-space: nowrap;
+  font-weight: 400;
+}
+
+.ant-tag-processing {
+  color: #1677ff;
+  background: #f0f7ff;
+  border: 1px solid #d6e4ff;
+}
+
+.ant-tag-success {
+  color: #389e0d;
+  background: #f6ffed;
+  border: 1px solid #d9f7be;
+}
+
+.ant-tag-warning {
+  color: #d46b08;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+}
+
+.ant-tag-error {
+  color: #cf1322;
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+}
+
+.ant-tag-default {
+  color: #595959;
+  background: #fafafa;
+  border: 1px solid #d9d9d9;
+}
+
+.ant-tag-purple {
+  color: #595959;
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+}
+
+/* Full Review Modal Styles */
+.review-modal-container {
+  max-width: 1200px;
+  width: 94vw;
+  height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.review-modal-header {
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.review-modal-title-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.review-modal-body {
   flex: 1;
   display: flex;
   overflow: hidden;
+  padding: 0;
+  background: #f8fafc;
 }
 
-/* Left: Diff Viewer (60% width) */
-.review-left-pane {
-  flex: 6;
-  min-width: 0;
+/* Modal Inner Two-Pane Layout */
+.modal-diff-pane {
+  flex: 62;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border-color);
-  background: var(--bg-surface);
+  background: #ffffff;
+  min-width: 0;
 }
 
-.diff-header {
+.modal-diff-toolbar {
   height: 42px;
-  background: var(--bg-surface-subtle);
+  background: #f8fafc;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -61,218 +381,182 @@
   color: var(--text-secondary);
 }
 
-.diff-legend {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 11px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.legend-box {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-}
-
-.legend-box.deleted {
-  background: #fecaca;
-  border: 1px solid #f87171;
-}
-
-.legend-box.added {
-  background: #bbf7d0;
-  border: 1px solid #4ade80;
-}
-
-.legend-box.param {
-  background: #fef08a;
-  border: 1px solid #facc15;
-}
-
-#monaco-diff-container {
+.modal-diff-container {
   flex: 1;
   width: 100%;
   height: 100%;
 }
 
-/* Right: Audit Checklist & Risk Indicators (40% width) */
-.review-right-pane {
-  flex: 4;
-  min-width: 360px;
-  max-width: 520px;
+.modal-info-pane {
+  flex: 38;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
-  padding: 16px 20px 80px 20px;
-  background: var(--bg-app);
+  padding: 16px;
+  gap: 14px;
+  background: #f8fafc;
 }
 
-/* Risk Indicator Cards */
-.risk-card {
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  background: var(--bg-surface);
-  padding: 14px;
-  margin-bottom: 14px;
-  box-shadow: var(--shadow-xs);
+.review-modal-footer {
+  min-height: 64px;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.risk-card.danger-risk {
-  border-left: 4px solid var(--danger);
+.review-modal-footer-left {
+  flex: 1;
+  min-width: 320px;
 }
 
-.risk-card.warning-risk {
-  border-left: 4px solid var(--warning);
+.review-modal-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-.risk-card.success-risk {
-  border-left: 4px solid var(--success);
+/* Ant Design Horizontal Steps Component */
+.ant-steps-horizontal {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 620px;
 }
 
-.risk-card-title {
-  font-size: 13px;
-  font-weight: 700;
+.ant-step-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+.ant-step-item:last-child {
+  flex: none;
+}
+
+.ant-step-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+  background: #ffffff;
+  padding-right: 8px;
+}
+
+.ant-step-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #d9d9d9;
+  background: #fafafa;
+  color: #8c8c8c;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.ant-step-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-step-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #262626;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.ant-step-subtitle {
+  font-size: 11px;
+  color: #8c8c8c;
+  line-height: 1.2;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.ant-step-line {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+  margin: 0 8px;
+  min-width: 24px;
+}
+
+/* Step Statuses */
+.ant-step-item.finish .ant-step-icon {
+  background: #e6f4ff;
+  border-color: #1677ff;
+  color: #1677ff;
+}
+
+.ant-step-item.finish .ant-step-line {
+  background: #1677ff;
+}
+
+.ant-step-item.process .ant-step-icon {
+  background: #1677ff;
+  border-color: #1677ff;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.2);
+}
+
+.ant-step-item.process .ant-step-title {
+  color: #1677ff;
+}
+
+.ant-step-item.rejected .ant-step-icon {
+  background: #fff1f0;
+  border-color: #cf1322;
+  color: #cf1322;
+}
+
+.ant-step-item.rejected .ant-step-title {
+  color: #cf1322;
+}
+
+/* Risk indicators and Timeline inside Modal */
+.review-section-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.review-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
-}
-
-.risk-items-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-/* Proof & Execution Screenshot Card */
-.proof-thumbnail-container {
-  display: flex;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.proof-thumbnail {
-  width: 140px;
-  height: 80px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  object-fit: cover;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.proof-thumbnail:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary);
-}
-
-/* Audit Timeline */
-.timeline {
-  position: relative;
-  padding-left: 20px;
-  margin-top: 12px;
-}
-
-.timeline::before {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 6px;
-  bottom: 6px;
-  width: 2px;
-  background: var(--border-color);
-}
-
-.timeline-step {
-  position: relative;
-  margin-bottom: 16px;
-}
-
-.timeline-step:last-child {
-  margin-bottom: 0;
-}
-
-.timeline-dot {
-  position: absolute;
-  left: -20px;
-  top: 3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--bg-surface);
-  border: 2px solid var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.timeline-dot.success {
-  border-color: var(--success);
-  background: var(--success-light);
-}
-
-.timeline-dot.danger {
-  border-color: var(--danger);
-  background: var(--danger-light);
-}
-
-.timeline-content {
   font-size: 12px;
-}
-
-.timeline-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2px;
-}
-
-.timeline-user {
   font-weight: 600;
-  color: var(--text-primary);
+  color: #1e293b;
 }
 
-.timeline-time {
-  color: var(--text-muted);
-  font-size: 11px;
+.proof-img-thumb {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  display: block;
+  cursor: zoom-in;
+  transition: transform 0.2s, box-shadow 0.2s;
+  background-color: #0f172a;
 }
 
-.timeline-comment {
-  background: var(--bg-surface-subtle);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  margin-top: 4px;
-  color: var(--text-secondary);
-}
-
-/* Fixed Bottom Action Bar */
-.review-bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 56px;
-  background: var(--bg-surface);
-  border-top: 1px solid var(--border-color);
-  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  z-index: 100;
-}
-
-.review-info-hint {
-  font-size: 12px;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.proof-img-thumb:hover {
+  transform: scale(1.01);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }

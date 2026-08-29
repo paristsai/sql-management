@@ -14,7 +14,7 @@ export class StudioView {
     this.currentId = null;
     this.currentTemplate = null;
     this.sqlEditor = null;
-    this.activeEditorTab = 'template'; // 'template' | 'raw'
+    this.activeEditorTab = 'raw'; // 'raw' | 'template'
     this.rawSqlCache = '';
     this.templateSqlCache = '';
     this.initialSnapshot = null;
@@ -65,11 +65,11 @@ export class StudioView {
           <div class="studio-left-pane">
             <div class="editor-toolbar">
               <div class="editor-tabs">
-                <button class="editor-tab active" id="tab-editor-template" data-view="template">
-                  ✨ SQL Template (挖洞模式)
+                <button class="editor-tab active" id="tab-editor-raw" data-view="raw">
+                  原始可跑 SQL (Raw SQL)
                 </button>
-                <button class="editor-tab" id="tab-editor-raw" data-view="raw">
-                  ⚡ 原始可跑 SQL (Raw SQL)
+                <button class="editor-tab" id="tab-editor-template" data-view="template">
+                  SQL Template (挖洞模式)
                 </button>
               </div>
               <div class="editor-tools">
@@ -88,10 +88,10 @@ export class StudioView {
               <div class="console-header">
                 <div class="console-tabs">
                   <button class="console-tab active" id="tab-console-test" data-tab="test">
-                    ▶️ 語法與執行測試
+                    語法與執行測試
                   </button>
                   <button class="console-tab" id="tab-console-similarity" data-tab="similarity">
-                    🔍 相似度比對 (Similarity Check)
+                    相似度比對 (Similarity Check)
                   </button>
                 </div>
                 <div style="font-size: 11px; color: var(--text-muted);" id="console-status-text">
@@ -146,12 +146,12 @@ export class StudioView {
             </div>
           </div>
 
-          <!-- Right Pane: Properties & Impact (40%) -->
+          <!-- Right Pane: Metadata & Governance Form (40% width) -->
           <div class="studio-right-pane">
             <!-- Card A: Basic Info -->
             <div class="card">
               <div class="card-header">
-                <div class="card-title">📌 卡片 A｜基本資訊</div>
+                <div class="card-title">卡片 A｜基本資訊</div>
               </div>
               <div class="card-body">
                 <div class="form-group">
@@ -209,10 +209,10 @@ export class StudioView {
             <div class="card ai-badge-header">
               <div class="card-header">
                 <div class="card-title" style="color: var(--purple-ai-text);">
-                  🤖 卡片 B｜AI 輔助解析與描述
+                  卡片 B｜AI 輔助解析與描述
                 </div>
                 <button class="btn btn-ai btn-xs" id="btn-ai-analyze">
-                  ✨ AI 重新解析與生成
+                  AI 重新解析與生成
                 </button>
               </div>
               <div class="card-body">
@@ -250,41 +250,41 @@ export class StudioView {
             <!-- Card C: Parameter Management -->
             <div class="card">
               <div class="card-header">
-                <div class="card-title">🎛️ 卡片 C｜動態參數清單</div>
+                <div class="card-title">卡片 C｜動態參數管理 (Parameters)</div>
                 <button class="btn btn-outline btn-xs" id="btn-add-param">+ 新增參數</button>
               </div>
               <div class="card-body">
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+                  在 SQL 中使用 <code>{{參數名}}</code> 語法挖洞，在此定義型態與預設值：
+                </div>
                 <div id="params-list-container">
                   <!-- Dynamic param items -->
                 </div>
               </div>
             </div>
 
-            <!-- Card D: Impact Analysis (Conditional in edit mode) -->
-            <div class="card" id="card-impact-analysis">
+            <!-- Card D: Downstream Impact Analysis -->
+            <div class="card" id="card-impact-analysis" style="display: none;">
               <div class="card-header">
-                <div class="card-title">💥 卡片 D｜變更衝擊分析 (Impact Analysis)</div>
+                <div class="card-title">卡片 D｜下游衝擊分析 (Impact Assessment)</div>
               </div>
               <div class="card-body">
                 <div class="impact-alert-box">
                   <div class="impact-alert-title">
-                    ⚠️ 偵測到線上作業調用依賴
+                    <span>線上相依性警示</span>
                   </div>
                   <div style="font-size: 12px; color: #881337;">
-                    修改 SQL 輸出欄位、型別或參數可能影響下游排程與報表。
+                    本樣板已有線上排程或使用者正在調用，修改後將影響下游作業：
                   </div>
                   <div class="impact-stats">
                     <div>
-                      <div class="impact-stat-number" id="impact-systems-count">4</div>
-                      <div style="font-size: 11px; color: var(--text-secondary);">調用系統 / DAG</div>
+                      <div class="impact-stat-number" id="impact-systems-count">3</div>
+                      <div style="font-size: 11px; color: #9f1239;">個相依 DAG / 系統</div>
                     </div>
                     <div>
-                      <div class="impact-stat-number" id="impact-users-count">18</div>
-                      <div style="font-size: 11px; color: var(--text-secondary);">調用使用者</div>
+                      <div class="impact-stat-number" id="impact-users-count">12</div>
+                      <div style="font-size: 11px; color: #9f1239;">位調用工程師</div>
                     </div>
-                  </div>
-                  <div style="display: flex; gap: 8px; margin-top: 8px;">
-                    <button class="btn btn-outline btn-xs" id="btn-download-impact-list">📥 下載受影響清單 CSV</button>
                   </div>
                 </div>
 
@@ -298,12 +298,11 @@ export class StudioView {
             <!-- Card E: Attachments & Proof -->
             <div class="card">
               <div class="card-header">
-                <div class="card-title">📎 卡片 E｜執行憑證與附件</div>
+                <div class="card-title">卡片 E｜執行憑證與附件</div>
                 <span class="badge badge-review" style="font-size: 10px;">需含執行成功截圖</span>
               </div>
               <div class="card-body">
                 <div class="upload-dropzone" id="upload-dropzone">
-                  <div style="font-size: 24px; margin-bottom: 4px;">🖼️</div>
                   <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">
                     點擊或拖曳上傳執行成功截圖 / 變更證明
                   </div>
@@ -331,15 +330,35 @@ export class StudioView {
         this.addParameter(param);
         this.renderParameters();
         this.renderMockParams();
+        this.refreshEditorHighlights();
         toast.info(`已加入動態參數 {{${param.name}}}`);
       },
       onPiiMarked: (fieldName) => {
         this.markColumnPii(fieldName, true);
+        this.refreshEditorHighlights();
         toast.warning(`已將欄位 [${fieldName}] 標記為 敏感個資`);
+      },
+      onContentChanged: () => {
+        this.refreshEditorHighlights();
       }
     });
 
     await this.sqlEditor.init('');
+  }
+
+  refreshEditorHighlights() {
+    if (!this.sqlEditor) return;
+    const piiFields = (this.currentTemplate?.columns || [])
+      .filter(c => c.isPii)
+      .map(c => c.name)
+      .concat(this.currentTemplate?.piiFields || []);
+    
+    const parameters = this.currentTemplate?.parameters || [];
+    this.sqlEditor.updateHighlights(
+      Array.from(new Set(piiFields)),
+      parameters,
+      this.activeEditorTab
+    );
   }
 
   loadTemplateData() {
@@ -359,22 +378,27 @@ export class StudioView {
       const badge = this.container.querySelector('#studio-status-badge');
       if (tpl.reviewStatus === 'Approved') {
         badge.className = 'badge badge-approved';
-        badge.innerHTML = `<span class="badge-dot"></span> 審核完畢 / ${tpl.usageStatus === 'Active' ? '可使用' : '停止使用'}`;
+        badge.innerHTML = '<span class="badge-dot"></span> 已核准';
       } else if (tpl.reviewStatus === 'In Review') {
         badge.className = 'badge badge-review';
-        badge.innerHTML = `<span class="badge-dot"></span> 審核中`;
+        badge.innerHTML = '<span class="badge-dot"></span> 審核中';
+      } else {
+        badge.className = 'badge badge-draft';
+        badge.innerHTML = '<span class="badge-dot"></span> 草稿';
       }
 
-      this.rawSqlCache = tpl.rawSql || '';
-      this.templateSqlCache = tpl.templateSql || '';
-      this.sqlEditor.setValue(this.templateSqlCache);
-
-      // Populate Form
-      const idInput = this.container.querySelector('#input-tpl-id');
-      idInput.value = tpl.id;
-      idInput.disabled = true; // Template ID cannot be modified in edit mode
+      this.container.querySelector('#input-tpl-id').value = tpl.id;
+      this.container.querySelector('#input-tpl-id').disabled = true;
       this.container.querySelector('#input-tpl-name').value = tpl.name;
       this.container.querySelector('#input-tpl-desc').value = tpl.description || '';
+
+      // Raw vs Template SQL
+      this.rawSqlCache = tpl.rawSql || tpl.templateSql || '';
+      this.templateSqlCache = tpl.templateSql || tpl.rawSql || '';
+
+      // Default tab is raw SQL
+      this.activeEditorTab = 'raw';
+      this.sqlEditor.setValue(this.rawSqlCache);
 
       // Type & Dept
       if (tpl.type === 'dept') {
@@ -397,6 +421,7 @@ export class StudioView {
       this.renderParameters(tpl.parameters || []);
       this.renderAttachments(tpl.attachments || []);
       this.renderMockParams();
+      this.refreshEditorHighlights();
 
       // Card D
       this.container.querySelector('#card-impact-analysis').style.display = 'block';
@@ -429,16 +454,21 @@ export class StudioView {
   SUM(o.amount) AS total_spent
 FROM users u
 LEFT JOIN orders o ON u.user_id = o.user_id
-WHERE u.channel = {{channel}}
-  AND u.register_date >= {{start_date}}
+WHERE u.channel = 'google_ad'
+  AND u.register_date >= '2026-08-01'
 GROUP BY u.user_id, u.phone_number, u.register_date;`;
 
-      this.templateSqlCache = defaultDemoSql;
-      this.rawSqlCache = defaultDemoSql.replace(/\{\{channel\}\}/g, "'google_ad'").replace(/\{\{start_date\}\}/g, "'2026-08-01'");
-      this.sqlEditor.setValue(this.templateSqlCache);
+      this.rawSqlCache = defaultDemoSql;
+      this.templateSqlCache = defaultDemoSql
+        .replace(/'google_ad'/g, '{{channel}}')
+        .replace(/'2026-08-01'/g, '{{start_date}}');
+
+      this.activeEditorTab = 'raw';
+      this.sqlEditor.setValue(this.rawSqlCache);
 
       // Auto trigger initial mock AI analysis
       this.runMockAiAnalysis(false);
+      setTimeout(() => this.refreshEditorHighlights(), 300);
     }
   }
 
@@ -451,19 +481,9 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
       }
     };
 
-    // Editor Tab switch (Template SQL vs Raw SQL)
-    const tabTemplate = this.container.querySelector('#tab-editor-template');
+    // Editor Tab switch (Raw SQL vs Template SQL)
     const tabRaw = this.container.querySelector('#tab-editor-raw');
-
-    tabTemplate.onclick = () => {
-      if (this.activeEditorTab === 'raw') {
-        this.rawSqlCache = this.sqlEditor.getValue();
-      }
-      this.activeEditorTab = 'template';
-      tabTemplate.classList.add('active');
-      tabRaw.classList.remove('active');
-      this.sqlEditor.setValue(this.templateSqlCache);
-    };
+    const tabTemplate = this.container.querySelector('#tab-editor-template');
 
     tabRaw.onclick = () => {
       if (this.activeEditorTab === 'template') {
@@ -480,6 +500,21 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
       tabRaw.classList.add('active');
       tabTemplate.classList.remove('active');
       this.sqlEditor.setValue(this.rawSqlCache);
+      this.refreshEditorHighlights();
+    };
+
+    tabTemplate.onclick = () => {
+      if (this.activeEditorTab === 'raw') {
+        this.rawSqlCache = this.sqlEditor.getValue();
+        if (!this.templateSqlCache) {
+          this.templateSqlCache = this.rawSqlCache;
+        }
+      }
+      this.activeEditorTab = 'template';
+      tabTemplate.classList.add('active');
+      tabRaw.classList.remove('active');
+      this.sqlEditor.setValue(this.templateSqlCache);
+      this.refreshEditorHighlights();
     };
 
     // Format SQL button
@@ -605,21 +640,111 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
 
       const currentSql = this.sqlEditor ? this.sqlEditor.getValue() : this.templateSqlCache;
 
-      // Auto parse columns from SELECT clause (Mock AST)
+      // Robust SELECT clause projection parser (Parenthesis-aware)
       const mockColumns = [];
-      if (currentSql.includes('user_id')) mockColumns.push({ name: 'user_id', type: 'VARCHAR(64)', desc: '用戶唯一識別號', isPii: false });
-      if (currentSql.includes('phone')) mockColumns.push({ name: 'phone_number', type: 'VARCHAR(20)', desc: '用戶聯絡電話 (PII)', isPii: true });
-      if (currentSql.includes('id_card')) mockColumns.push({ name: 'id_card_num', type: 'VARCHAR(30)', desc: '身分證字號 (PII)', isPii: true });
-      if (currentSql.includes('account')) mockColumns.push({ name: 'account_no', type: 'VARCHAR(30)', desc: '銀行帳戶 (PII)', isPii: true });
-      if (currentSql.includes('register_date')) mockColumns.push({ name: 'register_date', type: 'DATE', desc: '註冊時間', isPii: false });
-      if (currentSql.includes('order_id') || currentSql.includes('total_orders')) mockColumns.push({ name: 'total_orders', type: 'BIGINT', desc: '訂單累積總筆數', isPii: false });
-      if (currentSql.includes('amount') || currentSql.includes('revenue')) mockColumns.push({ name: 'total_revenue', type: 'DECIMAL(12,2)', desc: '消費交易總額 (NTD)', isPii: false });
+      const selectMatch = currentSql.match(/SELECT\s+([\s\S]+?)\s+FROM/i);
+      
+      if (selectMatch) {
+        const selectBody = selectMatch[1];
+        const rawProjections = [];
+        let currentItem = '';
+        let parenDepth = 0;
+
+        // Split by comma only outside of parentheses
+        for (let i = 0; i < selectBody.length; i++) {
+          const ch = selectBody[i];
+          if (ch === '(') parenDepth++;
+          else if (ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+
+          if (ch === ',' && parenDepth === 0) {
+            rawProjections.push(currentItem.trim());
+            currentItem = '';
+          } else {
+            currentItem += ch;
+          }
+        }
+        if (currentItem.trim()) rawProjections.push(currentItem.trim());
+
+        rawProjections.forEach(proj => {
+          const cleanProj = proj.replace(/--.*$/gm, '').trim();
+          if (!cleanProj) return;
+
+          let colDisplayName = '';
+          let colType = 'VARCHAR(32)';
+          let isPii = false;
+          let sourceDesc = '';
+
+          // Case 1: Expression with explicit "AS alias" -> e.g. "COUNT(DISTINCT a.activity_date) AS active_days_7d"
+          const asMatch = cleanProj.match(/([\s\S]+?)\s+AS\s+([a-zA-Z0-9_]+)$/i);
+          if (asMatch) {
+            const expr = asMatch[1].trim();
+            const alias = asMatch[2].trim();
+            colDisplayName = alias;
+
+            // Check if expr contains table alias like "u.register_date"
+            const tableMatch = expr.match(/([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/);
+            if (tableMatch) {
+              const prefix = tableMatch[1];
+              const origCol = tableMatch[2];
+              sourceDesc = `[來源: ${prefix}] ${origCol} ➡️ ${alias}`;
+              if (prefix === 'u' && (origCol.includes('phone') || origCol.includes('id_card') || origCol.includes('register') || origCol.includes('credit'))) {
+                isPii = true;
+                colDisplayName = `${prefix}.${origCol}`;
+              }
+            } else {
+              sourceDesc = `[計算欄位] ${alias}`;
+            }
+
+            if (expr.toUpperCase().includes('COUNT')) colType = 'INTEGER';
+            else if (expr.toUpperCase().includes('SUM') || expr.toUpperCase().includes('COALESCE')) colType = 'DECIMAL(12,2)';
+            else if (alias.includes('date')) colType = 'DATE';
+          } 
+          // Case 2: Direct column reference with table alias -> e.g. "u.user_id", "p.register_date"
+          else {
+            const dotMatch = cleanProj.match(/^([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)$/i);
+            if (dotMatch) {
+              const prefix = dotMatch[1];
+              const col = dotMatch[2];
+              colDisplayName = `${prefix}.${col}`;
+              sourceDesc = `[來源: ${prefix}] ${col}`;
+              
+              if (prefix === 'u' && (col.includes('phone') || col.includes('id_card') || col.includes('register') || col.includes('credit'))) {
+                isPii = true;
+              } else if (col.includes('phone') || col.includes('id_card') || col.includes('account')) {
+                isPii = true;
+              }
+
+              if (col.includes('date')) colType = 'DATE';
+              else if (col.includes('amount') || col.includes('revenue') || col.includes('price')) colType = 'DECIMAL(12,2)';
+              else if (col.includes('id')) colType = 'VARCHAR(64)';
+            } else {
+              // Plain column
+              const simpleCol = cleanProj.replace(/[^a-zA-Z0-9_]/g, '');
+              colDisplayName = simpleCol || cleanProj;
+              sourceDesc = `欄位 ${colDisplayName}`;
+              if (colDisplayName.includes('phone') || colDisplayName.includes('id_card') || colDisplayName.includes('account')) {
+                isPii = true;
+              }
+            }
+          }
+
+          if (colDisplayName && colDisplayName.toUpperCase() !== 'AS') {
+            mockColumns.push({
+              name: colDisplayName,
+              type: colType,
+              desc: `${sourceDesc}${isPii ? ' (PII 敏感資訊)' : ''}`,
+              isPii: isPii
+            });
+          }
+        });
+      }
 
       if (mockColumns.length === 0) {
-        mockColumns.push(
-          { name: 'record_id', type: 'VARCHAR(32)', desc: '主鍵識別碼', isPii: false },
-          { name: 'created_at', type: 'TIMESTAMP', desc: '建立時間戳', isPii: false }
-        );
+        if (currentSql.includes('user_id')) mockColumns.push({ name: 'u.user_id', type: 'VARCHAR(64)', desc: '[來源: u] 用戶唯一識別號', isPii: false });
+        if (currentSql.includes('phone')) mockColumns.push({ name: 'u.phone_number', type: 'VARCHAR(20)', desc: '[來源: u] 用戶聯絡電話 (PII)', isPii: true });
+        if (currentSql.includes('id_card')) mockColumns.push({ name: 'u.id_card_num', type: 'VARCHAR(30)', desc: '[來源: u] 身分證字號 (PII)', isPii: true });
+        if (currentSql.includes('register_date')) mockColumns.push({ name: 'u.register_date', type: 'DATE', desc: '[來源: u] 用戶註冊時間 (PII)', isPii: true });
+        if (currentSql.includes('total_revenue')) mockColumns.push({ name: 'total_revenue', type: 'DECIMAL(12,2)', desc: '消費交易總額 (NTD)', isPii: false });
       }
 
       this.currentTemplate.columns = mockColumns;
@@ -719,6 +844,7 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
     this.currentTemplate.piiFields = (this.currentTemplate.columns || [])
       .filter(c => c.isPii)
       .map(c => c.name);
+    this.refreshEditorHighlights();
   }
 
   addParameter(param) {
@@ -726,6 +852,7 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
     if (!this.currentTemplate.parameters.some(p => p.name === param.name)) {
       this.currentTemplate.parameters.push(param);
     }
+    this.refreshEditorHighlights();
   }
 
   renderParameters(params = this.currentTemplate.parameters || []) {

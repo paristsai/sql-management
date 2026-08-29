@@ -52,6 +52,16 @@ class AppRouter {
       };
     });
 
+    // Global user switcher
+    const userSwitcher = document.getElementById('global-user-switcher');
+    if (userSwitcher) {
+      userSwitcher.value = store.getCurrentUser();
+      userSwitcher.addEventListener('change', (e) => {
+        store.setCurrentUser(e.target.value);
+        toast.info(`已切換操作視角為：${e.target.value}`);
+      });
+    }
+
     // Quick action: reset data
     document.getElementById('btn-reset-demo-data')?.addEventListener('click', () => {
       if (confirm('確定要將所有 SQL Template 資料重置為系統預設範例？')) {
@@ -64,6 +74,18 @@ class AppRouter {
     document.getElementById('btn-close-api-modal')?.addEventListener('click', () => ModalManager.closeApiModal());
     document.getElementById('api-modal-overlay')?.addEventListener('click', (e) => {
       if (e.target.id === 'api-modal-overlay') ModalManager.closeApiModal();
+    });
+
+    document.getElementById('btn-close-review-modal')?.addEventListener('click', () => {
+      document.getElementById('review-modal-overlay')?.classList.remove('active');
+    });
+    document.getElementById('btn-modal-review-close')?.addEventListener('click', () => {
+      document.getElementById('review-modal-overlay')?.classList.remove('active');
+    });
+    document.getElementById('review-modal-overlay')?.addEventListener('click', (e) => {
+      if (e.target.id === 'review-modal-overlay') {
+        document.getElementById('review-modal-overlay').classList.remove('active');
+      }
     });
 
     document.getElementById('btn-close-reject-modal')?.addEventListener('click', () => ModalManager.closeRejectModal());

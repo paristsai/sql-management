@@ -165,45 +165,42 @@
   background-color: currentColor;
 }
 
-/* Tags */
-.tag-pii {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  background-color: var(--danger-light);
-  color: var(--danger-text);
-  border: 1px solid var(--danger-border);
-}
-
+/* Custom Tags & Badges - Clean Enterprise Tone */
 .tag-db {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-weight: 500;
+  padding: 1px 7px;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
   border-radius: var(--radius-sm);
-  background-color: var(--primary-light);
-  color: var(--primary);
-  border: 1px solid var(--primary-border);
   font-family: var(--font-mono);
+  font-size: 11px;
 }
 
 .tag-dept {
   display: inline-flex;
   align-items: center;
+  padding: 1px 7px;
+  background: #fafafa;
+  color: #595959;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+}
+
+.tag-pii {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
-  padding: 2px 6px;
+  padding: 1px 7px;
+  background: #fff1f0;
+  color: #cf1322;
+  border: 1px solid #ffa39e;
+  border-radius: var(--radius-sm);
   font-size: 11px;
   font-weight: 500;
-  border-radius: var(--radius-sm);
-  background-color: #f3e8ff;
-  color: #6b21a8;
-  border: 1px solid #e9d5ff;
 }
 
 /* Form Controls */

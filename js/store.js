@@ -64,15 +64,16 @@ HAVING COUNT(DISTINCT a.activity_date) >= {{min_active_days}};`,
     ],
     piiFields: ['phone_number', 'id_card_num'],
     attachments: [
-      { id: 'att-1', name: 'execution_proof_trino.png', size: '240 KB', type: 'image/png', isSuccessScreenshot: true, url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300"><rect width="100%" height="100%" fill="%231e293b"/><text x="20" y="40" fill="%2310b981" font-family="monospace" font-size="16">✓ Trino Query Executed Successfully (12.4ms, 1,280 rows)</text><rect x="20" y="60" width="560" height="210" fill="%230f172a" rx="6"/><text x="40" y="90" fill="%2394a3b8" font-family="monospace" font-size="13">user_id | phone_number | active_days_7d | total_revenue</text><text x="40" y="120" fill="%23f8fafc" font-family="monospace" font-size="13">U982142 | 0912****88   | 5              | $1,420.00</text><text x="40" y="150" fill="%23f8fafc" font-family="monospace" font-size="13">U982143 | 0988****12   | 7              | $3,890.00</text></svg>' }
+      { id: 'att-1', name: 'execution_proof_trino.png', size: '240 KB', type: 'image/png', isSuccessScreenshot: true, url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="280" viewBox="0 0 600 280"><rect width="100%" height="100%" fill="#1e293b"/><text x="20" y="38" fill="#10b981" font-family="monospace" font-size="15" font-weight="bold">✓ Trino Query Executed Successfully (12.4ms, 1,280 rows)</text><rect x="20" y="55" width="560" height="205" fill="#0f172a" rx="6" stroke="#334155"/><text x="35" y="85" fill="#94a3b8" font-family="monospace" font-size="13">user_id | phone_number | active_days_7d | total_revenue</text><line x1="35" y1="95" x2="560" y2="95" stroke="#334155" /><text x="35" y="125" fill="#f8fafc" font-family="monospace" font-size="13">U982142 | 0912****88   | 5              | $1,420.00</text><text x="35" y="155" fill="#f8fafc" font-family="monospace" font-size="13">U982143 | 0988****12   | 7              | $3,890.00</text><text x="35" y="185" fill="#f8fafc" font-family="monospace" font-size="13">U982144 | 0910****55   | 4              | $850.00</text><text x="35" y="215" fill="#10b981" font-family="monospace" font-size="12">... and 1,277 more rows fetched in 0.012s</text></svg>') }
     ],
     reviewStatus: 'In Review', // 'Draft' | 'In Review' | 'Approved'
     usageStatus: 'Disabled',   // 'Active' | 'Disabled'
     author: 'Alex Chen (Data Engineer)',
-    updatedAt: '2026-08-23 15:30:00',
+    assignee: 'John Doe (Data Architect)',
+    updatedAt: '2026-08-28 15:30:00',
     history: [
-      { action: 'Create', user: 'Alex Chen', time: '2026-08-23 14:00:00', comment: '建立初始版本' },
-      { action: 'Submit Review', user: 'Alex Chen', time: '2026-08-23 15:30:00', comment: '送出審核，已附上 Trino 執行成功截圖' }
+      { action: 'Create', user: 'Alex Chen', time: '2026-08-28 14:00:00', comment: '建立初始版本' },
+      { action: 'Submit Review', user: 'Alex Chen', time: '2026-08-28 15:30:00', comment: '送出審核，指派 John Doe 審查 PII 遮蔽與執行計劃' }
     ],
     impact: {
       affectedSystems: 4,
@@ -121,16 +122,17 @@ WHERE t.period = {{accounting_period}}
     ],
     piiFields: ['account_no', 'amount'],
     attachments: [
-      { id: 'att-fin', name: 'oracle_audit_pass.png', size: '310 KB', type: 'image/png', isSuccessScreenshot: true, url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300"><rect width="100%" height="100%" fill="%230f172a"/><text x="20" y="40" fill="%2310b981" font-family="monospace" font-size="16">✓ Oracle DB Query OK (0.8s, 4,200 rows)</text><rect x="20" y="60" width="560" height="210" fill="%231e293b" rx="6"/><text x="40" y="90" fill="%2338bdf8" font-family="monospace" font-size="13">tx_id | account_no | bank_code | amount</text><text x="40" y="120" fill="%23f8fafc" font-family="monospace" font-size="13">TX9910 | 822-0091-*** | 012 | $892,000.00</text></svg>' }
+      { id: 'att-fin', name: 'oracle_audit_pass.png', size: '310 KB', type: 'image/png', isSuccessScreenshot: true, url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="280" viewBox="0 0 600 280"><rect width="100%" height="100%" fill="#0f172a"/><text x="20" y="38" fill="#10b981" font-family="monospace" font-size="15" font-weight="bold">✓ Oracle DB Query OK (0.8s, 4,200 rows)</text><rect x="20" y="55" width="560" height="205" fill="#1e293b" rx="6" stroke="#334155"/><text x="35" y="85" fill="#38bdf8" font-family="monospace" font-size="13">tx_id | account_no | bank_code | amount</text><line x1="35" y1="95" x2="560" y2="95" stroke="#334155" /><text x="35" y="125" fill="#f8fafc" font-family="monospace" font-size="13">TX9910 | 822-0091-*** | 012 | $892,000.00</text><text x="35" y="155" fill="#f8fafc" font-family="monospace" font-size="13">TX9911 | 004-1182-*** | 004 | $1,230,500.00</text></svg>') }
     ],
     reviewStatus: 'Approved',
     usageStatus: 'Active',
     author: 'Emily Lin (FinTech)',
+    assignee: 'John Doe (Data Architect)',
     updatedAt: '2026-08-20 11:20:00',
     history: [
       { action: 'Create', user: 'Emily Lin', time: '2026-08-19 10:00:00', comment: '建立財務專用 SQL' },
       { action: 'Submit Review', user: 'Emily Lin', time: '2026-08-19 16:00:00', comment: '送審' },
-      { action: 'Approve', user: 'Finance Lead', time: '2026-08-20 11:20:00', comment: '審核通過，准予上線' }
+      { action: 'Approve', user: 'John Doe', time: '2026-08-20 11:20:00', comment: '審核通過，准予上線' }
     ],
     impact: {
       affectedSystems: 2,
@@ -142,7 +144,7 @@ WHERE t.period = {{accounting_period}}
     id: 'TPL_DAILY_SALES_AGG',
     name: '每日全通路銷售營收與退貨彙總',
     type: 'company',
-    departments: ['全公司'],
+    departments: ['營運企劃部', '數據工程部'],
     databases: ['MySQL_Master', 'Snowflake_WH'],
     rawSql: `SELECT 
   o.order_date,
@@ -180,15 +182,68 @@ GROUP BY o.order_date, o.store_id;`,
     attachments: [],
     reviewStatus: 'Draft',
     usageStatus: 'Disabled',
-    author: 'Kevin Chang (BI Analyst)',
-    updatedAt: '2026-08-22 09:15:00',
+    author: 'John Doe (Data Architect)',
+    assignee: 'Sarah Wu (Governance Lead)',
+    updatedAt: '2026-08-28 09:15:00',
     history: [
-      { action: 'Create', user: 'Kevin Chang', time: '2026-08-22 09:15:00', comment: '草稿儲存中' }
+      { action: 'Create', user: 'John Doe', time: '2026-08-28 09:15:00', comment: '草稿儲存中' }
     ],
     impact: {
       affectedSystems: 0,
       affectedUsers: 0,
       systemsList: []
+    }
+  },
+  {
+    id: 'TPL_RISK_CREDIT_SCORE',
+    name: '用戶信用評分與風控黑名單特徵提領',
+    type: 'dept',
+    departments: ['風控合規部', '產品研發部'],
+    databases: ['Snowflake_WH'],
+    rawSql: `SELECT
+  r.user_id,
+  r.credit_score,
+  r.overdue_count_90d,
+  r.risk_level
+FROM risk_feature_store r
+WHERE r.risk_level IN ('HIGH', 'CRITICAL')
+  AND r.updated_at >= '2026-08-01';`,
+    templateSql: `SELECT
+  r.user_id,
+  r.credit_score,
+  r.overdue_count_90d,
+  r.risk_level
+FROM risk_feature_store r
+WHERE r.risk_level IN ({{risk_levels}})
+  AND r.updated_at >= {{since_date}};`,
+    description: '風控部提取高風險用戶特徵，供反詐欺模型及人工徵信覆核使用。',
+    columns: [
+      { name: 'user_id', type: 'VARCHAR(64)', desc: '用戶唯一識別編號', isPii: false },
+      { name: 'credit_score', type: 'INTEGER', desc: '信用評分 (PII)', isPii: true },
+      { name: 'overdue_count_90d', type: 'INTEGER', desc: '近90天逾期次數', isPii: false },
+      { name: 'risk_level', type: 'VARCHAR(20)', desc: '風險評級', isPii: false }
+    ],
+    parameters: [
+      { name: 'risk_levels', type: 'String', defaultVal: "'HIGH', 'CRITICAL'", required: true, desc: '風險等級過濾' },
+      { name: 'since_date', type: 'Date', defaultVal: '2026-08-01', required: true, desc: '更新基準日' }
+    ],
+    piiFields: ['credit_score'],
+    attachments: [
+      { id: 'att-risk', name: 'snowflake_risk_run.png', size: '180 KB', type: 'image/png', isSuccessScreenshot: true, url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="280" viewBox="0 0 600 280"><rect width="100%" height="100%" fill="#0f172a"/><text x="20" y="38" fill="#38bdf8" font-family="monospace" font-size="15" font-weight="bold">✓ Snowflake Query Success (45ms, 86 rows)</text><rect x="20" y="55" width="560" height="205" fill="#1e293b" rx="6" stroke="#334155"/><text x="35" y="85" fill="#94a3b8" font-family="monospace" font-size="13">user_id | credit_score | overdue_count_90d | risk_level</text><line x1="35" y1="95" x2="560" y2="95" stroke="#334155" /><text x="35" y="125" fill="#f8fafc" font-family="monospace" font-size="13">U100234 | 420 (High)   | 4                 | CRITICAL</text><text x="35" y="155" fill="#f8fafc" font-family="monospace" font-size="13">U100235 | 510 (Med)    | 2                 | HIGH</text></svg>') }
+    ],
+    reviewStatus: 'In Review',
+    usageStatus: 'Disabled',
+    author: 'John Doe (Data Architect)',
+    assignee: 'Sarah Wu (Governance Lead)',
+    updatedAt: '2026-08-29 08:30:00',
+    history: [
+      { action: 'Create', user: 'John Doe', time: '2026-08-29 08:00:00', comment: '新增風控特徵 SQL' },
+      { action: 'Submit Review', user: 'John Doe', time: '2026-08-29 08:30:00', comment: '送審以供風控 DAG 正式排程調用' }
+    ],
+    impact: {
+      affectedSystems: 3,
+      affectedUsers: 8,
+      systemsList: ['Anti-Fraud Realtime Engine', 'Credit Risk Daily Batch']
     }
   }
 ];
@@ -197,7 +252,17 @@ class DataStore {
   constructor() {
     this.templates = [];
     this.listeners = [];
+    this.currentUser = 'John Doe (Data Architect)';
     this.load();
+  }
+
+  getCurrentUser() {
+    return this.currentUser;
+  }
+
+  setCurrentUser(userName) {
+    this.currentUser = userName;
+    this.notify();
   }
 
   load() {

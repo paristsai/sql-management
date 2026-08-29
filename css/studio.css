@@ -383,3 +383,40 @@
   color: var(--text-primary);
   font-weight: 500;
 }
+
+/* ==========================================================================
+   Monaco Editor Syntax Highlight Decorations (PII & Param)
+   ========================================================================== */
+.monaco-highlight-param {
+  background-color: rgba(254, 240, 138, 0.5) !important; /* Amber Light */
+  border-bottom: 2px solid #eab308 !important;
+  color: inherit !important;
+}
+
+.monaco-highlight-raw-param {
+  background-color: rgba(254, 249, 195, 0.6) !important; /* Soft Amber Light */
+  border-bottom: 2px dashed #ca8a04 !important; /* Dashed underline */
+  color: inherit !important;
+}
+
+.monaco-highlight-pii {
+  background-color: rgba(254, 205, 211, 0.45) !important; /* Rose Light */
+  border-bottom: 2px solid #f43f5e !important;
+  color: inherit !important;
+}
+
+.monaco-highlight-param-glyph {
+  background: #eab308;
+  border-radius: 50%;
+  width: 8px !important;
+  height: 8px !important;
+  margin-left: 5px;
+}
+
+.monaco-highlight-pii-glyph {
+  background: #f43f5e;
+  border-radius: 50%;
+  width: 8px !important;
+  height: 8px !important;
+  margin-left: 5px;
+}
