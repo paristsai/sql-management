@@ -67,15 +67,15 @@ export class ReviewView {
           <!-- Ant Design Nav Tabs -->
           <div class="ant-tabs-nav">
             <button class="ant-tab-item active" data-tab="assigned">
-              <span>Assign to me (待我審核)</span>
+              <span>待我審核 (Assigned)</span>
               <span class="ant-tab-badge highlight" id="tab-badge-assigned">0</span>
             </button>
             <button class="ant-tab-item" data-tab="my">
-              <span>My requests (我提交的申請)</span>
+              <span>我的送審紀錄</span>
               <span class="ant-tab-badge" id="tab-badge-my">0</span>
             </button>
             <button class="ant-tab-item" data-tab="all">
-              <span>All requests (全量審核清單)</span>
+              <span>全部審核清單</span>
               <span class="ant-tab-badge" id="tab-badge-all">0</span>
             </button>
           </div>
@@ -86,7 +86,9 @@ export class ReviewView {
             <div class="review-table-toolbar">
               <div class="review-toolbar-left">
                 <div class="search-input-wrapper review-search-input">
-                  <span class="search-icon">🔍</span>
+                  <span class="search-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  </span>
                   <input type="text" class="form-input search-input" id="review-search-input" placeholder="搜尋 ID、名稱、SQL、申請人或部門..." />
                 </div>
                 <select class="form-select review-filter-select" id="review-status-filter">
@@ -223,7 +225,7 @@ export class ReviewView {
     // Step 3: Filter by keyword
     if (this.filterKeyword.trim()) {
       const q = this.filterKeyword.toLowerCase();
-      list = list.filter(t => 
+      list = list.filter(t =>
         (t.id && t.id.toLowerCase().includes(q)) ||
         (t.name && t.name.toLowerCase().includes(q)) ||
         (t.description && t.description.toLowerCase().includes(q)) ||
@@ -251,7 +253,7 @@ export class ReviewView {
         <tr>
           <td colspan="8">
             <div class="table-empty-box">
-              <div class="table-empty-icon">📭</div>
+              <div class="table-empty-icon" style="font-size:32px; color:var(--text-muted);">—</div>
               <div style="font-weight: 500; font-size: 14px; margin-bottom: 4px;">查無符合條件的審核項目</div>
               <div style="font-size: 12px;">您可以切換上方 Tab、變更篩選條件或切換右上角登入視角</div>
             </div>
@@ -358,9 +360,9 @@ export class ReviewView {
       <div class="modal-diff-pane">
         <div class="modal-diff-toolbar">
           <div>
-            <span>原始可跑 SQL (Raw)</span>
+            <span>Raw SQL</span>
             <span style="margin: 0 10px; color: #cbd5e1;">|</span>
-            <span>挖洞 Template SQL (送審版本)</span>
+            <span>SQL Template</span>
           </div>
           <div style="display: flex; gap: 10px; font-size: 11px;">
             <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:10px;height:10px;background:#fecaca;border-radius:2px;"></span> 刪除</span>
@@ -456,7 +458,7 @@ export class ReviewView {
         approveBtn.onclick = () => {
           if (confirm(`確定核准 Template [${id}]？\n核准後狀態將變更為「可使用 (Active)」。`)) {
             store.approveTemplate(id);
-            toast.success(`🎉 Template [${id}] 審核通過！正式發布上線！`);
+            toast.success(`Template [${id}] 審核通過，正式發布上線！`);
             overlay.classList.remove('active');
           }
         };
@@ -548,7 +550,7 @@ export class ReviewView {
     if (piiFields.length > 0) {
       piiTag.className = 'ant-tag ant-tag-error';
       piiTag.textContent = `${piiFields.length} 個敏感欄位`;
-      piiList.innerHTML = piiFields.map(f => `<span class="ant-tag ant-tag-error" style="font-size:11px;">🛡️ ${f}</span>`).join(' ');
+      piiList.innerHTML = piiFields.map(f => `<span class="ant-tag ant-tag-error" style="font-size:11px;">${f}</span>`).join(' ');
     } else {
       piiTag.className = 'ant-tag ant-tag-success';
       piiTag.textContent = '無敏感欄位';
@@ -578,7 +580,7 @@ export class ReviewView {
           caption.style.marginTop = '6px';
           caption.style.display = 'flex';
           caption.style.justifyContent = 'space-between';
-          caption.innerHTML = `<span>📄 <strong>${att.name}</strong></span> <span>${att.size}</span>`;
+          caption.innerHTML = `<span><strong>${att.name}</strong></span> <span>${att.size}</span>`;
 
           wrap.appendChild(img);
           wrap.appendChild(caption);

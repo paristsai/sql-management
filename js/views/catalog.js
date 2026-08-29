@@ -54,7 +54,7 @@ export class CatalogView {
         <div class="catalog-filter-card">
           <div class="filter-row">
             <div class="search-input-wrapper">
-              <span class="search-icon">🔍</span>
+              <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
               <input type="text" class="form-input search-input" id="filter-keyword" placeholder="搜尋 Template ID、名稱、SQL 內容、建立者..." />
             </div>
 
@@ -114,8 +114,8 @@ export class CatalogView {
             <span>✓ 已選取 <strong id="selected-count">0</strong> 個 SQL Template</span>
           </div>
           <div class="batch-actions">
-            <button class="btn btn-outline btn-sm" id="btn-batch-export">📦 批次匯出 (JSON/YAML)</button>
-            <button class="btn btn-danger-outline btn-sm" id="btn-batch-disable">⛔ 批次停用</button>
+            <button class="btn btn-outline btn-sm" id="btn-batch-export">批次匯出 (JSON/YAML)</button>
+            <button class="btn btn-danger-outline btn-sm" id="btn-batch-disable">批次停用</button>
           </div>
         </div>
 
@@ -304,7 +304,7 @@ export class CatalogView {
       // PII tags
       let piiTags = '<span style="color: var(--text-muted); font-size:12px;">無</span>';
       if (tpl.piiFields && tpl.piiFields.length > 0) {
-        piiTags = tpl.piiFields.map(f => `<span class="tag-pii">🛡️ ${f}</span>`).join(' ');
+        piiTags = tpl.piiFields.map(f => `<span class="tag-pii">${f}</span>`).join(' ');
       }
 
       // DB tags
@@ -312,7 +312,7 @@ export class CatalogView {
 
       // Dept
       const deptText = tpl.type === 'company'
-        ? '<span class="badge" style="background:#e0e7ff; color:#3730a3;">🏢 全公司</span>'
+        ? '<span class="badge" style="background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe;">全公司</span>'
         : (tpl.departments || []).map(d => `<span class="tag-dept">${d}</span>`).join(' ');
 
       return `
@@ -347,25 +347,25 @@ export class CatalogView {
               </button>
               <div class="action-menu-dropdown">
                 <button class="action-menu-item" data-action="copy-id" data-id="${tpl.id}">
-                  📋 複製 ID
+                  複製 ID
                 </button>
                 <button class="action-menu-item" data-action="duplicate" data-id="${tpl.id}">
-                  📑 複製建立 (Duplicate)
+                  複製建立 (Duplicate)
                 </button>
                 <button class="action-menu-item" data-action="edit" data-id="${tpl.id}">
-                  ✏️ 進入編輯
+                  進入編輯
                 </button>
                 ${tpl.reviewStatus === 'In Review' ? `
                 <button class="action-menu-item" data-action="goto-review" data-id="${tpl.id}" style="color:var(--primary); font-weight:600;">
-                  🔍 前往審核中心
+                  前往審核中心
                 </button>` : ''}
                 <hr style="border:none; border-top:1px solid var(--border-light); margin:2px 0;">
                 ${tpl.reviewStatus === 'Approved' ? `
                 <button class="action-menu-item" data-action="toggle-status" data-id="${tpl.id}">
-                  ${tpl.usageStatus === 'Active' ? '⛔ 停止使用' : '✅ 啟用 (Active)'}
+                  ${tpl.usageStatus === 'Active' ? '停止使用' : '啟用 (Active)'}
                 </button>` : ''}
                 <button class="action-menu-item danger-item" data-action="delete" data-id="${tpl.id}">
-                  🗑️ 刪除
+                  刪除
                 </button>
               </div>
             </div>

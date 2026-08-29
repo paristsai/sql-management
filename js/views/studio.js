@@ -66,10 +66,10 @@ export class StudioView {
             <div class="editor-toolbar">
               <div class="editor-tabs">
                 <button class="editor-tab active" id="tab-editor-raw" data-view="raw">
-                  原始可跑 SQL (Raw SQL)
+                  Raw SQL
                 </button>
                 <button class="editor-tab" id="tab-editor-template" data-view="template">
-                  SQL Template (挖洞模式)
+                  SQL Template
                 </button>
               </div>
               <div class="editor-tools">
@@ -352,7 +352,7 @@ export class StudioView {
       .filter(c => c.isPii)
       .map(c => c.name)
       .concat(this.currentTemplate?.piiFields || []);
-    
+
     const parameters = this.currentTemplate?.parameters || [];
     this.sqlEditor.updateHighlights(
       Array.from(new Set(piiFields)),
@@ -643,7 +643,7 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
       // Robust SELECT clause projection parser (Parenthesis-aware)
       const mockColumns = [];
       const selectMatch = currentSql.match(/SELECT\s+([\s\S]+?)\s+FROM/i);
-      
+
       if (selectMatch) {
         const selectBody = selectMatch[1];
         const rawProjections = [];
@@ -698,7 +698,7 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
             if (expr.toUpperCase().includes('COUNT')) colType = 'INTEGER';
             else if (expr.toUpperCase().includes('SUM') || expr.toUpperCase().includes('COALESCE')) colType = 'DECIMAL(12,2)';
             else if (alias.includes('date')) colType = 'DATE';
-          } 
+          }
           // Case 2: Direct column reference with table alias -> e.g. "u.user_id", "p.register_date"
           else {
             const dotMatch = cleanProj.match(/^([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)$/i);
@@ -707,7 +707,7 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
               const col = dotMatch[2];
               colDisplayName = `${prefix}.${col}`;
               sourceDesc = `[來源: ${prefix}] ${col}`;
-              
+
               if (prefix === 'u' && (col.includes('phone') || col.includes('id_card') || col.includes('register') || col.includes('credit'))) {
                 isPii = true;
               } else if (col.includes('phone') || col.includes('id_card') || col.includes('account')) {
