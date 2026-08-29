@@ -153,7 +153,8 @@ WHERE t.period = {{accounting_period}}
   SUM(o.payment_amount) AS gross_sales,
   SUM(CASE WHEN o.is_refund = 1 THEN o.payment_amount ELSE 0 END) AS refund_sales
 FROM store_orders o
-WHERE o.order_date = CURRENT_DATE - INTERVAL 1 DAY
+WHERE o.order_date BETWEEN '2026-08-01' AND '2026-08-07'
+  AND (o.store_id IS NULL OR o.store_id = 'STORE_001')
 GROUP BY o.order_date, o.store_id;`,
     templateSql: `SELECT 
   o.order_date,
@@ -174,9 +175,9 @@ GROUP BY o.order_date, o.store_id;`,
       { name: 'refund_sales', type: 'DECIMAL(14,2)', desc: '退款折讓金額', isPii: false }
     ],
     parameters: [
-      { name: 'start_date', type: 'Date', defaultVal: 'CURRENT_DATE - INTERVAL 7 DAY', required: true, desc: '查詢起始日期' },
-      { name: 'end_date', type: 'Date', defaultVal: 'CURRENT_DATE', required: true, desc: '查詢結束日期' },
-      { name: 'store_id', type: 'String', defaultVal: 'NULL', required: false, desc: '指定門市 ID (若為 NULL 則查全部)' }
+      { name: 'start_date', type: 'Date', defaultVal: "'2026-08-01'", required: true, desc: '查詢起始日期 (YYYY-MM-DD)' },
+      { name: 'end_date', type: 'Date', defaultVal: "'2026-08-07'", required: true, desc: '查詢結束日期 (YYYY-MM-DD)' },
+      { name: 'store_id', type: 'String', defaultVal: "'STORE_001'", required: false, desc: '指定門市 ID (例如 STORE_001)' }
     ],
     piiFields: [],
     attachments: [],

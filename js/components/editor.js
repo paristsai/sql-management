@@ -176,14 +176,14 @@ export class SqlEditor {
 
       let pattern;
       if (cleanField.includes('.')) {
-        // Qualified name like "u.register_date"
+        // Qualified name like "u.register_date": match exact prefix.col
         const escaped = cleanField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         pattern = `\\b${escaped}\\b`;
       } else {
         // Plain column name like "phone_number":
-        // Only match if not preceded by another unmatching table alias (e.g. "p.register_date")
+        // Should match either "phone_number" or "table.phone_number" (e.g. "u.phone_number")
         const escaped = cleanField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        pattern = `(?<![a-zA-Z0-9_]\\.)\\b${escaped}\\b`;
+        pattern = `(?:\\b[a-zA-Z0-9_]+\\.)?\\b${escaped}\\b`;
       }
 
       try {
