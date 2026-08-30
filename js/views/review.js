@@ -17,6 +17,7 @@ export class ReviewView {
     this.modalReadOnlyEditor = null;
     this.modalActiveTab = 'raw'; // 'raw' | 'template'
     this.modalDiffEnabled = false;
+    this.modalHighlightEnabled = true;
     this.filterKeyword = '';
     this.filterStatus = 'all';
   }
@@ -50,14 +51,6 @@ export class ReviewView {
             <p>集中審核 SQL 樣板、PII 隱私安全檢查、資料庫查詢效能比對與上線發布覆核</p>
           </div>
           <div style="display: flex; gap: 10px;">
-            <button class="btn btn-outline btn-sm" id="btn-review-refresh">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-              重新整理
-            </button>
-            <button class="btn btn-primary btn-sm" id="btn-review-goto-studio">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              提交新 SQL 審核
-            </button>
           </div>
         </div>
 
@@ -278,7 +271,7 @@ export class ReviewView {
       let piiTag = '';
       const piiFields = t.piiFields || [];
       if (piiFields.length > 0) {
-        piiTag = `<span style="color:#dc2626; font-size:12px; font-weight:500;" title="${piiFields.join(', ')}">${piiFields.length} 個 PII</span>`;
+        piiTag = `<span style="color:#dc2626; font-size:12px; font-weight:500;" title="${piiFields.join(', ')}">${piiFields.length} 個</span>`;
       } else {
         piiTag = `<span style="color:#94a3b8; font-size:12px;">無</span>`;
       }
@@ -379,7 +372,7 @@ export class ReviewView {
             <button class="review-sql-tab active" id="review-tab-raw" data-tab="raw">Raw SQL</button>
             <button class="review-sql-tab" id="review-tab-template" data-tab="template">SQL Template</button>
           </div>
-          <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
             <div class="review-sql-tab-diff-legend" id="review-diff-legend" style="display:none;">
               <span class="review-diff-legend-item">
                 <span class="review-diff-legend-dot" style="background:#fecaca;"></span>刪除
@@ -395,6 +388,20 @@ export class ReviewView {
                 <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
               </svg>
               版本差異
+            </button>
+            <div class="sql-highlight-legend" id="review-highlight-legend" style="${this.modalHighlightEnabled ? 'display: flex;' : 'display: none;'}">
+              <span class="sql-highlight-legend-item">
+                <span class="sql-highlight-dot-pii"></span>敏感欄位
+              </span>
+              <span class="sql-highlight-legend-item">
+                <span class="sql-highlight-dot-param"></span>動態參數
+              </span>
+            </div>
+            <button class="sql-highlight-toggle-btn ${this.modalHighlightEnabled ? 'active' : ''}" id="review-btn-highlight-toggle" title="切換敏感欄位與動態參數高亮標記">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <span>高亮欄位</span>
             </button>
           </div>
         </div>
@@ -417,6 +424,8 @@ export class ReviewView {
     const tabRaw = modalBody.querySelector('#review-tab-raw');
     const tabTemplate = modalBody.querySelector('#review-tab-template');
     const btnDiffToggle = modalBody.querySelector('#review-btn-diff-toggle');
+    const btnHighlightToggle = modalBody.querySelector('#review-btn-highlight-toggle');
+    const highlightLegend = modalBody.querySelector('#review-highlight-legend');
 
     tabRaw.addEventListener('click', () => {
       this.modalActiveTab = 'raw';
@@ -430,6 +439,30 @@ export class ReviewView {
       btnDiffToggle.addEventListener('click', () => {
         this.modalDiffEnabled = !this.modalDiffEnabled;
         this._renderSqlEditor(tpl);
+      });
+    }
+    if (btnHighlightToggle) {
+      btnHighlightToggle.addEventListener('click', () => {
+        this.modalHighlightEnabled = !this.modalHighlightEnabled;
+        btnHighlightToggle.classList.toggle('active', this.modalHighlightEnabled);
+        if (highlightLegend) {
+          highlightLegend.style.display = this.modalHighlightEnabled ? 'flex' : 'none';
+        }
+
+        const activeEditor = this.modalDiffEnabled ? this.modalDiffViewer : this.modalReadOnlyEditor;
+        if (this.modalHighlightEnabled) {
+          const piiFields = (tpl.columns || [])
+            .filter(c => c.isPii)
+            .map(c => c.name)
+            .concat(tpl.piiFields || []);
+          activeEditor?.updateHighlights(
+            Array.from(new Set(piiFields)),
+            tpl.parameters || [],
+            this.modalActiveTab
+          );
+        } else {
+          activeEditor?.clearHighlights();
+        }
       });
     }
 
@@ -551,12 +584,36 @@ export class ReviewView {
 
       this.modalDiffViewer = new SqlDiffViewer(editorArea);
       await this.modalDiffViewer.init(previousSql, currentSql);
+
+      if (this.modalHighlightEnabled) {
+        const piiFields = (tpl.columns || [])
+          .filter(c => c.isPii)
+          .map(c => c.name)
+          .concat(tpl.piiFields || []);
+        this.modalDiffViewer.updateHighlights(
+          Array.from(new Set(piiFields)),
+          tpl.parameters || [],
+          this.modalActiveTab
+        );
+      }
     } else {
       // Single read-only editor
       if (diffLegend) diffLegend.style.display = 'none';
 
       this.modalReadOnlyEditor = new SqlReadOnlyEditor(editorArea);
       await this.modalReadOnlyEditor.init(currentSql);
+
+      if (this.modalHighlightEnabled) {
+        const piiFields = (tpl.columns || [])
+          .filter(c => c.isPii)
+          .map(c => c.name)
+          .concat(tpl.piiFields || []);
+        this.modalReadOnlyEditor.updateHighlights(
+          Array.from(new Set(piiFields)),
+          tpl.parameters || [],
+          this.modalActiveTab
+        );
+      }
     }
   }
 
@@ -631,15 +688,15 @@ export class ReviewView {
     const columns = tpl.columns || [];
     const colRows = columns.length > 0
       ? columns.map(col => {
-          const isOverridden = col.aiSensitive && !col.isPii;
-          let sensitiveStatus = '<span style="color:#94a3b8;font-size:11px;">一般</span>';
-          if (col.isPii) {
-            sensitiveStatus = '<span style="color:#dc2626;font-weight:600;font-size:11px;">敏感</span>';
-          } else if (isOverridden) {
-            sensitiveStatus = '<span style="color:#d97706;font-weight:500;font-size:11px;" title="原系統判定敏感，已手動解除">解除</span>';
-          }
+        const isOverridden = col.aiSensitive && !col.isPii;
+        let sensitiveStatus = '<span style="color:#94a3b8;font-size:11px;">一般</span>';
+        if (col.isPii) {
+          sensitiveStatus = '<span style="color:#dc2626;font-weight:600;font-size:11px;">敏感</span>';
+        } else if (isOverridden) {
+          sensitiveStatus = '<span style="color:#d97706;font-weight:500;font-size:11px;" title="原系統判定敏感，已手動解除">解除</span>';
+        }
 
-          return `
+        return `
             <tr>
               <td><span style="font-family:var(--font-mono);font-weight:600;font-size:12px;color:#1e293b;">${col.name}</span></td>
               <td><span style="font-family:var(--font-mono);color:#64748b;font-size:11px;">${col.type || '-'}</span></td>
@@ -655,7 +712,7 @@ export class ReviewView {
                 ${sensitiveStatus}
               </td>
             </tr>`;
-        }).join('')
+      }).join('')
       : `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px;">無欄位定義</td></tr>`;
 
     // Parameters

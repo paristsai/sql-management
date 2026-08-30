@@ -93,122 +93,13 @@ export class SqlEditor {
     const model = this.editor.getModel();
     if (!model) return;
 
-    const newDecorations = [];
-    const text = model.getValue();
-
-    // 1. Highlight {{param}} in Template mode or if {{param}} exists in text
-    const paramRegex = /\{\{([a-zA-Z0-9_]+)\}\}/g;
-    let match;
-    const foundPlaceholders = new Set();
-    while ((match = paramRegex.exec(text)) !== null) {
-      foundPlaceholders.add(match[1]);
-      const startOffset = match.index;
-      const endOffset = match.index + match[0].length;
-      const startPos = model.getPositionAt(startOffset);
-      const endPos = model.getPositionAt(endOffset);
-
-      newDecorations.push({
-        range: new window.monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
-        options: {
-          inlineClassName: 'monaco-highlight-param',
-          hoverMessage: { value: `**動態參數**: \`{{${match[1]}}}\` (執行時將代入即時值)` }
-        }
-      });
-    }
-
-    // 2. In Raw SQL mode: Highlight raw values that correspond to extracted parameters
-    (parameters || []).forEach(param => {
-      const pObj = typeof param === 'string' ? { name: param, defaultVal: '' } : param;
-      if (!pObj || !pObj.name) return;
-
-      // If text already has {{param.name}}, we already highlighted it above
-      if (foundPlaceholders.has(pObj.name)) return;
-
-      if (pObj.defaultVal !== undefined && pObj.defaultVal !== null) {
-        const rawVal = String(pObj.defaultVal).trim();
-        if (rawVal.length > 0) {
-          // Check both quoted form and unquoted form
-          const cleanVal = rawVal.replace(/^'+|'+$/g, '').trim();
-          const variants = [rawVal];
-          if (cleanVal && cleanVal !== rawVal) {
-            variants.push(cleanVal);
-            variants.push(`'${cleanVal}'`);
-          }
-
-          // Pick the best match
-          Array.from(new Set(variants)).forEach(valToMatch => {
-            if (!valToMatch || valToMatch.length === 0) return;
-            const escaped = valToMatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // If it's a number/word, use word boundary; if quoted, match quotes
-            const isQuoted = valToMatch.startsWith("'") && valToMatch.endsWith("'");
-            const pattern = isQuoted ? escaped : `(?<=^|[\\s,(=<>])${escaped}(?=$|[\\s,);<>]|$)`;
-            
-            try {
-              const valRegex = new RegExp(pattern, 'g');
-              let vMatch;
-              while ((vMatch = valRegex.exec(text)) !== null) {
-                const startOffset = vMatch.index;
-                const endOffset = vMatch.index + vMatch[0].length;
-                const startPos = model.getPositionAt(startOffset);
-                const endPos = model.getPositionAt(endOffset);
-
-                newDecorations.push({
-                  range: new window.monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
-                  options: {
-                    inlineClassName: 'monaco-highlight-raw-param',
-                    hoverMessage: { value: `**對應參數化內容**: 此值對應 Template 模式中的動態參數 \`{{${pObj.name}}}\`` }
-                  }
-                });
-              }
-            } catch (e) {
-              // fallback to simple regex
-            }
-          });
-        }
-      }
-    });
-
-    // 3. Highlight PII fields (Supports both "u.register_date" and plain "phone_number")
-    (piiFields || []).forEach(field => {
-      if (!field) return;
-      const cleanField = field.trim();
-      if (!cleanField) return;
-
-      let pattern;
-      if (cleanField.includes('.')) {
-        // Qualified name like "u.register_date": match exact prefix.col
-        const escaped = cleanField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        pattern = `\\b${escaped}\\b`;
-      } else {
-        // Plain column name like "phone_number":
-        // Should match either "phone_number" or "table.phone_number" (e.g. "u.phone_number")
-        const escaped = cleanField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        pattern = `(?:\\b[a-zA-Z0-9_]+\\.)?\\b${escaped}\\b`;
-      }
-
-      try {
-        const fieldRegex = new RegExp(pattern, 'gi');
-        let pMatch;
-        while ((pMatch = fieldRegex.exec(text)) !== null) {
-          const startOffset = pMatch.index;
-          const endOffset = pMatch.index + pMatch[0].length;
-          const startPos = model.getPositionAt(startOffset);
-          const endPos = model.getPositionAt(endOffset);
-
-          newDecorations.push({
-            range: new window.monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
-            options: {
-              inlineClassName: 'monaco-highlight-pii',
-              hoverMessage: { value: `**敏感欄位 (PII)**: \`${pMatch[0]}\` (包含機敏個資或隱私數據)` }
-            }
-          });
-        }
-      } catch (e) {
-        // fallback
-      }
-    });
-
+    const newDecorations = computeSqlDecorations(model, piiFields, parameters, mode);
     this.decorationIds = this.editor.deltaDecorations(this.decorationIds, newDecorations);
+  }
+
+  clearHighlights() {
+    if (!this.editor || !window.monaco) return;
+    this.decorationIds = this.editor.deltaDecorations(this.decorationIds, []);
   }
 
   setupSelectionListener() {
@@ -306,10 +197,138 @@ export class SqlEditor {
   }
 }
 
+/**
+ * Helper to compute decoration ranges for parameters and sensitive (PII) fields
+ */
+export function computeSqlDecorations(model, piiFields = [], parameters = [], mode = 'raw') {
+  if (!model || !window.monaco) return [];
+  const newDecorations = [];
+  const text = model.getValue();
+
+  // 1. Highlight {{param}} in Template mode or if {{param}} exists in text
+  const paramRegex = /\{\{([a-zA-Z0-9_]+)\}\}/g;
+  let match;
+  const foundPlaceholders = new Set();
+  while ((match = paramRegex.exec(text)) !== null) {
+    foundPlaceholders.add(match[1]);
+    const startOffset = match.index;
+    const endOffset = match.index + match[0].length;
+    const startPos = model.getPositionAt(startOffset);
+    const endPos = model.getPositionAt(endOffset);
+
+    newDecorations.push({
+      range: new window.monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
+      options: {
+        inlineClassName: 'monaco-highlight-param',
+        hoverMessage: { value: `**動態參數**: \`{{${match[1]}}}\` (執行時將代入即時值)` }
+      }
+    });
+  }
+
+  // 2. In Raw SQL mode: Highlight raw values that correspond to extracted parameters
+  (parameters || []).forEach(param => {
+    const pObj = typeof param === 'string' ? { name: param, defaultVal: '' } : param;
+    if (!pObj || !pObj.name) return;
+
+    // If text already has {{param.name}}, we already highlighted it above
+    if (foundPlaceholders.has(pObj.name)) return;
+
+    if (pObj.defaultVal !== undefined && pObj.defaultVal !== null) {
+      const rawVal = String(pObj.defaultVal).trim();
+      if (rawVal.length > 0) {
+        const cleanVal = rawVal.replace(/^['"]+|['"]+$/g, '').trim();
+        if (!cleanVal) return;
+
+        // Build list of patterns to match: quoted forms and unquoted form with boundaries
+        const escapedClean = cleanVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const patterns = [
+          `'${escapedClean}'`,
+          `"${escapedClean}"`,
+          `(?<=^|[\\s,(=<>'"])${escapedClean}(?=$|[\\s,);<>'"]|$)`
+        ];
+
+        // Track matched ranges to prevent duplicate overlapping decorations
+        const matchedRanges = new Set();
+
+        patterns.forEach(pattern => {
+          try {
+            const valRegex = new RegExp(pattern, 'g');
+            let vMatch;
+            while ((vMatch = valRegex.exec(text)) !== null) {
+              const startOffset = vMatch.index;
+              const endOffset = vMatch.index + vMatch[0].length;
+              const rangeKey = `${startOffset}-${endOffset}`;
+              if (matchedRanges.has(rangeKey)) continue;
+
+              matchedRanges.add(rangeKey);
+              const startPos = model.getPositionAt(startOffset);
+              const endPos = model.getPositionAt(endOffset);
+
+              newDecorations.push({
+                range: new window.monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
+                options: {
+                  inlineClassName: 'monaco-highlight-raw-param',
+                  hoverMessage: { value: `**對應參數化內容**: 此值對應 Template 模式中的動態參數 \`{{${pObj.name}}}\`` }
+                }
+              });
+            }
+          } catch (e) {
+            // fallback
+          }
+        });
+      }
+    }
+  });
+
+  // 3. Highlight PII fields (Supports both "u.register_date" and plain "phone_number")
+  (piiFields || []).forEach(field => {
+    if (!field) return;
+    const cleanField = field.trim();
+    if (!cleanField) return;
+
+    let pattern;
+    if (cleanField.includes('.')) {
+      // Qualified name like "u.register_date": match exact prefix.col
+      const escaped = cleanField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      pattern = `\\b${escaped}\\b`;
+    } else {
+      // Plain column name like "phone_number":
+      // Should match either "phone_number" or "table.phone_number" (e.g. "u.phone_number")
+      const escaped = cleanField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      pattern = `(?:\\b[a-zA-Z0-9_]+\\.)?\\b${escaped}\\b`;
+    }
+
+    try {
+      const fieldRegex = new RegExp(pattern, 'gi');
+      let pMatch;
+      while ((pMatch = fieldRegex.exec(text)) !== null) {
+        const startOffset = pMatch.index;
+        const endOffset = pMatch.index + pMatch[0].length;
+        const startPos = model.getPositionAt(startOffset);
+        const endPos = model.getPositionAt(endOffset);
+
+        newDecorations.push({
+          range: new window.monaco.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
+          options: {
+            inlineClassName: 'monaco-highlight-pii',
+            hoverMessage: { value: `**敏感欄位 (PII)**: \`${pMatch[0]}\` (包含機敏個資或隱私數據)` }
+          }
+        });
+      }
+    } catch (e) {
+      // fallback
+    }
+  });
+
+  return newDecorations;
+}
+
 export class SqlDiffViewer {
   constructor(containerElement) {
     this.container = containerElement;
     this.diffEditor = null;
+    this.originalDecorations = [];
+    this.modifiedDecorations = [];
   }
 
   async init(originalValue = '', modifiedValue = '') {
@@ -340,6 +359,28 @@ export class SqlDiffViewer {
     });
   }
 
+  updateHighlights(piiFields = [], parameters = [], mode = 'raw') {
+    if (!this.diffEditor || !window.monaco) return;
+    const origEditor = this.diffEditor.getOriginalEditor();
+    const modEditor = this.diffEditor.getModifiedEditor();
+    if (origEditor && origEditor.getModel()) {
+      const decs = computeSqlDecorations(origEditor.getModel(), piiFields, parameters, mode);
+      this.originalDecorations = origEditor.deltaDecorations(this.originalDecorations, decs);
+    }
+    if (modEditor && modEditor.getModel()) {
+      const decs = computeSqlDecorations(modEditor.getModel(), piiFields, parameters, mode);
+      this.modifiedDecorations = modEditor.deltaDecorations(this.modifiedDecorations, decs);
+    }
+  }
+
+  clearHighlights() {
+    if (!this.diffEditor || !window.monaco) return;
+    const origEditor = this.diffEditor.getOriginalEditor();
+    const modEditor = this.diffEditor.getModifiedEditor();
+    if (origEditor) this.originalDecorations = origEditor.deltaDecorations(this.originalDecorations, []);
+    if (modEditor) this.modifiedDecorations = modEditor.deltaDecorations(this.modifiedDecorations, []);
+  }
+
   layout() {
     this.diffEditor?.layout?.();
   }
@@ -357,6 +398,7 @@ export class SqlReadOnlyEditor {
   constructor(containerElement) {
     this.container = containerElement;
     this.editor = null;
+    this.decorationIds = [];
   }
 
   async init(value = '') {
@@ -387,6 +429,20 @@ export class SqlReadOnlyEditor {
     if (this.editor) {
       this.editor.setValue(val || '');
     }
+  }
+
+  updateHighlights(piiFields = [], parameters = [], mode = 'raw') {
+    if (!this.editor || !window.monaco) return;
+    const model = this.editor.getModel();
+    if (!model) return;
+
+    const newDecorations = computeSqlDecorations(model, piiFields, parameters, mode);
+    this.decorationIds = this.editor.deltaDecorations(this.decorationIds, newDecorations);
+  }
+
+  clearHighlights() {
+    if (!this.editor || !window.monaco) return;
+    this.decorationIds = this.editor.deltaDecorations(this.decorationIds, []);
   }
 
   layout() {

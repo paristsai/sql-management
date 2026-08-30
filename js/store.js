@@ -10,7 +10,7 @@ const INITIAL_TEMPLATES = [
     name: '用戶 7 日留存率與付費轉換分析',
     type: 'company', // 'company' | 'dept'
     departments: ['數據工程部', '營運企劃部', '產品研發部'],
-    databases: ['Trino', 'MySQL_Master'],
+    databases: ['DBName1', 'DBName2'],
     rawSql: `SELECT 
   u.user_id,
   u.phone_number,
@@ -64,7 +64,7 @@ HAVING COUNT(DISTINCT a.activity_date) >= {{min_active_days}};`,
     ],
     piiFields: ['phone_number', 'id_card_num'],
     attachments: [
-      { id: 'att-1', name: 'execution_proof_trino.png', size: '240 KB', type: 'image/png', isSuccessScreenshot: true, url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="280" viewBox="0 0 600 280"><rect width="100%" height="100%" fill="#1e293b"/><text x="20" y="38" fill="#10b981" font-family="monospace" font-size="15" font-weight="bold">✓ Trino Query Executed Successfully (12.4ms, 1,280 rows)</text><rect x="20" y="55" width="560" height="205" fill="#0f172a" rx="6" stroke="#334155"/><text x="35" y="85" fill="#94a3b8" font-family="monospace" font-size="13">user_id | phone_number | active_days_7d | total_revenue</text><line x1="35" y1="95" x2="560" y2="95" stroke="#334155" /><text x="35" y="125" fill="#f8fafc" font-family="monospace" font-size="13">U982142 | 0912****88   | 5              | $1,420.00</text><text x="35" y="155" fill="#f8fafc" font-family="monospace" font-size="13">U982143 | 0988****12   | 7              | $3,890.00</text><text x="35" y="185" fill="#f8fafc" font-family="monospace" font-size="13">U982144 | 0910****55   | 4              | $850.00</text><text x="35" y="215" fill="#10b981" font-family="monospace" font-size="12">... and 1,277 more rows fetched in 0.012s</text></svg>') }
+      { id: 'att-1', name: 'execution_proof_DBName1.png', size: '240 KB', type: 'image/png', isSuccessScreenshot: true, url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="280" viewBox="0 0 600 280"><rect width="100%" height="100%" fill="#1e293b"/><text x="20" y="38" fill="#10b981" font-family="monospace" font-size="15" font-weight="bold">✓ DBName1 Query Executed Successfully (12.4ms, 1,280 rows)</text><rect x="20" y="55" width="560" height="205" fill="#0f172a" rx="6" stroke="#334155"/><text x="35" y="85" fill="#94a3b8" font-family="monospace" font-size="13">user_id | phone_number | active_days_7d | total_revenue</text><line x1="35" y1="95" x2="560" y2="95" stroke="#334155" /><text x="35" y="125" fill="#f8fafc" font-family="monospace" font-size="13">U982142 | 0912****88   | 5              | $1,420.00</text><text x="35" y="155" fill="#f8fafc" font-family="monospace" font-size="13">U982143 | 0988****12   | 7              | $3,890.00</text><text x="35" y="185" fill="#f8fafc" font-family="monospace" font-size="13">U982144 | 0910****55   | 4              | $850.00</text><text x="35" y="215" fill="#10b981" font-family="monospace" font-size="12">... and 1,277 more rows fetched in 0.012s</text></svg>') }
     ],
     reviewStatus: 'In Review', // 'Draft' | 'In Review' | 'Approved'
     usageStatus: 'Disabled',   // 'Active' | 'Disabled'
@@ -129,7 +129,7 @@ HAVING COUNT(DISTINCT a.activity_date) >= {{min_active_days}};`,
     name: '財務部月結對帳清冊 (敏感審計專用)',
     type: 'dept',
     departments: ['財務會計部', '法務合規部'],
-    databases: ['Oracle_Fin', 'PostgreSQL_Analytics'],
+    databases: ['DBName5', 'DBName4'],
     rawSql: `SELECT 
   t.tx_id,
   t.account_no,
@@ -238,7 +238,7 @@ WHERE t.period = {{accounting_period}}
     name: '每日全通路銷售營收與退貨彙總',
     type: 'company',
     departments: ['營運企劃部', '數據工程部'],
-    databases: ['MySQL_Master', 'Snowflake_WH'],
+    databases: ['DBName2', 'DBName3'],
     rawSql: `SELECT 
   o.order_date,
   o.store_id,
@@ -294,7 +294,7 @@ GROUP BY o.order_date, o.store_id;`,
     name: '用戶信用評分與風控黑名單特徵提領',
     type: 'dept',
     departments: ['風控合規部', '產品研發部'],
-    databases: ['Snowflake_WH'],
+    databases: ['DBName3'],
     rawSql: `SELECT
   r.user_id,
   r.credit_score,

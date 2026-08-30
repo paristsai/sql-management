@@ -18,7 +18,7 @@ export class ModalManager {
 
     const jsonPayload = JSON.stringify({
       template_id: template.id,
-      target_db: (template.databases && template.databases[0]) || 'MySQL_Master',
+      target_db: (template.databases && template.databases[0]) || 'DBName2',
       parameters: paramsObj
     }, null, 2);
 

@@ -570,3 +570,76 @@ input:checked + .toggle-slider:before {
 .toast.toast-warning {
   border-left: 4px solid var(--warning);
 }
+
+/* ==========================================================================
+   SQL Highlight Toggle Button & Legend (Shared across Studio, Modals)
+   ========================================================================== */
+.sql-highlight-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.sql-highlight-toggle-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.sql-highlight-toggle-btn.active {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #93c5fd;
+  font-weight: 600;
+}
+
+.sql-highlight-toggle-btn.active svg {
+  stroke: #2563eb;
+  fill: rgba(37, 99, 235, 0.12);
+}
+
+.sql-highlight-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #64748b;
+  user-select: none;
+  transition: opacity 0.15s;
+}
+
+.sql-highlight-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sql-highlight-dot-pii {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(254, 205, 211, 0.9);
+  border: 1px solid #f43f5e;
+}
+
+.sql-highlight-dot-param {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(254, 240, 138, 0.9);
+  border: 1px solid #eab308;
+}
+

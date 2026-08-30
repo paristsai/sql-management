@@ -15,6 +15,7 @@ export class StudioView {
     this.currentTemplate = null;
     this.sqlEditor = null;
     this.activeEditorTab = 'raw'; // 'raw' | 'template'
+    this.highlightEnabled = true;
     this.rawSqlCache = '';
     this.templateSqlCache = '';
     this.initialSnapshot = null;
@@ -43,11 +44,12 @@ export class StudioView {
             <div class="studio-template-title" id="studio-header-title">
               新建 SQL Template
             </div>
-            <span id="studio-status-badge" class="badge badge-draft"><span class="badge-dot"></span> 草稿</span>
+            <div class="badge badge-draft" id="studio-status-badge">
+              <span class="badge-dot"></span> 草稿
+            </div>
           </div>
 
-          <div class="studio-actions">
-            <button class="btn btn-outline btn-sm" id="studio-btn-cancel">放棄變更</button>
+          <div class="studio-header-actions">
             <button class="btn btn-secondary btn-sm" id="studio-btn-save-draft">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
               儲存草稿
@@ -73,6 +75,20 @@ export class StudioView {
                 </button>
               </div>
               <div class="editor-tools">
+                <div class="sql-highlight-legend" id="studio-highlight-legend" style="${this.highlightEnabled ? 'display: flex;' : 'display: none;'}">
+                  <span class="sql-highlight-legend-item">
+                    <span class="sql-highlight-dot-pii"></span>敏感欄位
+                  </span>
+                  <span class="sql-highlight-legend-item">
+                    <span class="sql-highlight-dot-param"></span>動態參數
+                  </span>
+                </div>
+                <button class="sql-highlight-toggle-btn ${this.highlightEnabled ? 'active' : ''}" id="studio-btn-highlight-toggle" title="切換敏感欄位與動態參數高亮標記">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  <span>高亮標記</span>
+                </button>
                 <span style="font-size: 11px; color: var(--text-muted);">選取代碼可快速挖洞或標記敏感欄位</span>
                 <button class="btn btn-outline btn-xs" id="btn-format-sql" title="格式化 SQL">格式化</button>
               </div>
@@ -105,10 +121,10 @@ export class StudioView {
                   <div style="display: flex; align-items: center; gap: 6px;">
                     <span style="font-weight: 600; font-size: 12px;">測試目標 DB:</span>
                     <select class="form-select form-select-sm" id="test-target-db" style="width: 140px; padding: 4px 8px;">
-                      <option value="MySQL_Master">MySQL_Master</option>
-                      <option value="Trino">Trino (BigData)</option>
-                      <option value="Oracle_Fin">Oracle_Fin</option>
-                      <option value="Snowflake_WH">Snowflake_WH</option>
+                      <option value="DBName2">DBName2</option>
+                      <option value="DBName1">DBName1 (BigData)</option>
+                      <option value="DBName5">DBName5</option>
+                      <option value="DBName3">DBName3</option>
                     </select>
                   </div>
                   <button class="btn btn-success btn-sm" id="btn-run-test">
@@ -198,11 +214,11 @@ export class StudioView {
                 <div class="form-group">
                   <label class="form-label">綁定目標資料庫<span class="required">*</span></label>
                   <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; margin-top: 4px;">
-                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="MySQL_Master" checked /> MySQL_Master</label>
-                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="Trino" checked /> Trino</label>
-                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="Oracle_Fin" /> Oracle_Fin</label>
-                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="Snowflake_WH" /> Snowflake_WH</label>
-                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="PostgreSQL_Analytics" /> PostgreSQL</label>
+                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="DBName1" checked /> DBName1</label>
+                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="DBName2" checked /> DBName2</label>
+                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="DBName3" /> DBName3</label>
+                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="DBName4" /> DBName4</label>
+                    <label class="tag-db" style="cursor: pointer;"><input type="checkbox" class="db-checkbox" value="DBName5" /> DBName5</label>
                   </div>
                 </div>
               </div>
@@ -352,6 +368,10 @@ export class StudioView {
 
   refreshEditorHighlights() {
     if (!this.sqlEditor) return;
+    if (!this.highlightEnabled) {
+      this.sqlEditor.clearHighlights();
+      return;
+    }
     const piiFields = (this.currentTemplate?.columns || [])
       .filter(c => c.isPii)
       .map(c => c.name)
@@ -434,22 +454,6 @@ export class StudioView {
 
     } else {
       // Create mode
-      this.currentTemplate = {
-        id: '',
-        name: '',
-        type: 'company',
-        departments: [],
-        databases: ['MySQL_Master', 'Trino'],
-        rawSql: '',
-        templateSql: '',
-        description: '',
-        columns: [],
-        parameters: [],
-        piiFields: [],
-        attachments: []
-      };
-      this.container.querySelector('#card-impact-analysis').style.display = 'none';
-
       const defaultDemoSql = `SELECT 
   u.user_id,
   u.phone_number,
@@ -462,17 +466,49 @@ WHERE u.channel = 'google_ad'
   AND u.register_date >= '2026-08-01'
 GROUP BY u.user_id, u.phone_number, u.register_date;`;
 
-      this.rawSqlCache = defaultDemoSql;
-      this.templateSqlCache = defaultDemoSql
+      const demoTemplateSql = defaultDemoSql
         .replace(/'google_ad'/g, '{{channel}}')
         .replace(/'2026-08-01'/g, '{{start_date}}');
+
+      this.currentTemplate = {
+        id: '',
+        name: '',
+        type: 'company',
+        departments: [],
+        databases: ['DBName2', 'DBName1'],
+        rawSql: defaultDemoSql,
+        templateSql: demoTemplateSql,
+        description: '【AI 自動生成業務描述】本 SQL 查詢主要針對目標資料庫執行多維度彙總分析，解析 u.user_id, u.phone_number, u.register_date 等關鍵指標，支援營運策略與系統報表調用。',
+        columns: [
+          { name: 'u.user_id', type: 'VARCHAR(64)', desc: '[來源: u] 用戶唯一識別號', aiSensitive: false, isPii: false, overrideReason: '' },
+          { name: 'u.phone_number', type: 'VARCHAR(20)', desc: '[來源: u] 用戶聯絡電話 (敏感資訊)', aiSensitive: true, isPii: true, overrideReason: '' },
+          { name: 'u.register_date', type: 'DATE', desc: '[來源: u] 用戶註冊時間 (敏感資訊)', aiSensitive: true, isPii: true, overrideReason: '' },
+          { name: 'total_orders', type: 'INTEGER', desc: '[計算欄位] 訂單總次數', aiSensitive: false, isPii: false, overrideReason: '' },
+          { name: 'total_spent', type: 'DECIMAL(12,2)', desc: '[計算欄位] 累計消費總金額 (NTD)', aiSensitive: false, isPii: false, overrideReason: '' }
+        ],
+        parameters: [
+          { name: 'channel', type: 'String', defaultVal: "'google_ad'", required: true, desc: '推廣獲客渠道' },
+          { name: 'start_date', type: 'Date', defaultVal: '2026-08-01', required: true, desc: '用戶註冊起算日期' }
+        ],
+        piiFields: ['u.phone_number', 'u.register_date'],
+        attachments: []
+      };
+      this.container.querySelector('#card-impact-analysis').style.display = 'none';
+
+      this.rawSqlCache = defaultDemoSql;
+      this.templateSqlCache = demoTemplateSql;
 
       this.activeEditorTab = 'raw';
       this.sqlEditor.setValue(this.rawSqlCache);
 
-      // Auto trigger initial mock AI analysis
-      this.runMockAiAnalysis(false);
-      setTimeout(() => this.refreshEditorHighlights(), 300);
+      // Render initial columns, params and highlights
+      this.renderColumns(this.currentTemplate.columns);
+      this.renderParameters(this.currentTemplate.parameters);
+      this.renderMockParams();
+      this.refreshEditorHighlights();
+
+      const descArea = this.container.querySelector('#tpl-description');
+      if (descArea) descArea.value = this.currentTemplate.description;
     }
   }
 
@@ -528,6 +564,20 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
         toast.info('SQL 程式碼已重新排版');
       }
     };
+
+    // Highlight toggle button
+    const studioHighlightToggle = this.container.querySelector('#studio-btn-highlight-toggle');
+    const studioHighlightLegend = this.container.querySelector('#studio-highlight-legend');
+    if (studioHighlightToggle) {
+      studioHighlightToggle.onclick = () => {
+        this.highlightEnabled = !this.highlightEnabled;
+        studioHighlightToggle.classList.toggle('active', this.highlightEnabled);
+        if (studioHighlightLegend) {
+          studioHighlightLegend.style.display = this.highlightEnabled ? 'flex' : 'none';
+        }
+        this.refreshEditorHighlights();
+      };
+    }
 
     // Type radio toggle
     this.container.querySelectorAll('input[name="tpl-type"]').forEach(radio => {
@@ -834,6 +884,8 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
         this.renderParameters();
         this.renderMockParams();
       }
+
+      this.refreshEditorHighlights();
 
       if (showToast) {
         toast.success('✨ AI AST 欄位解析與業務描述生成完畢！');
