@@ -116,7 +116,7 @@ export class ReviewView {
                     <th style="min-width: 220px;">SQL 樣板名稱與用途</th>
                     <th style="width: 140px;">適用部門</th>
                     <th style="width: 120px;">目標資料庫</th>
-                    <th style="width: 110px;">安全 / PII</th>
+                    <th style="width: 110px;">敏感資訊</th>
                     <th style="width: 150px;">申請人 / 指派審核</th>
                     <th style="width: 110px;">審核狀態</th>
                     <th style="width: 140px;">最後更新時間</th>
@@ -627,18 +627,35 @@ export class ReviewView {
 
     const dbText = (tpl.databases || []).join(', ') || '-';
 
-    // Columns / PII
+    // Columns / Sensitive info
     const columns = tpl.columns || [];
     const colRows = columns.length > 0
-      ? columns.map(col => `
-        <tr>
-          <td><span style="font-family:var(--font-mono);font-weight:600;font-size:12px;color:#1e293b;">${col.name}</span></td>
-          <td><span style="font-family:var(--font-mono);color:#64748b;font-size:11px;">${col.type || '-'}</span></td>
-          <td style="color:#475569;">${col.desc || '-'}</td>
-          <td style="text-align:right;">
-            ${col.isPii ? '<span style="color:#dc2626;font-weight:600;font-size:11px;">PII</span>' : '<span style="color:#cbd5e1;">-</span>'}
-          </td>
-        </tr>`).join('')
+      ? columns.map(col => {
+          const isOverridden = col.aiSensitive && !col.isPii;
+          let sensitiveStatus = '<span style="color:#94a3b8;font-size:11px;">一般</span>';
+          if (col.isPii) {
+            sensitiveStatus = '<span style="color:#dc2626;font-weight:600;font-size:11px;">敏感</span>';
+          } else if (isOverridden) {
+            sensitiveStatus = '<span style="color:#d97706;font-weight:500;font-size:11px;" title="原系統判定敏感，已手動解除">解除</span>';
+          }
+
+          return `
+            <tr>
+              <td><span style="font-family:var(--font-mono);font-weight:600;font-size:12px;color:#1e293b;">${col.name}</span></td>
+              <td><span style="font-family:var(--font-mono);color:#64748b;font-size:11px;">${col.type || '-'}</span></td>
+              <td>
+                <div style="color:#475569;">${col.desc || '-'}</div>
+                ${isOverridden && col.overrideReason ? `
+                  <div style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:3px;padding:3px 6px;margin-top:4px;">
+                    <strong>解除理由：</strong>${col.overrideReason}
+                  </div>
+                ` : ''}
+              </td>
+              <td style="text-align:right;">
+                ${sensitiveStatus}
+              </td>
+            </tr>`;
+        }).join('')
       : `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px;">無欄位定義</td></tr>`;
 
     // Parameters

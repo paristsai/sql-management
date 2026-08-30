@@ -98,9 +98,9 @@ export class CatalogView {
 
             <div style="min-width: 120px;">
               <select class="form-select" id="filter-pii">
-                <option value="all">敏感資料 (PII)</option>
-                <option value="has_pii">含 PII 欄位</option>
-                <option value="no_pii">無 PII 欄位</option>
+                <option value="all">敏感資料過濾</option>
+                <option value="has_pii">含敏感欄位</option>
+                <option value="no_pii">無敏感欄位</option>
               </select>
             </div>
 
@@ -129,7 +129,7 @@ export class CatalogView {
                 <th>名稱 / 業務描述</th>
                 <th style="width: 120px;">適用部門</th>
                 <th style="width: 130px;">綁定 DB</th>
-                <th style="width: 140px;">敏感欄位 (PII)</th>
+                <th style="width: 140px;">敏感欄位</th>
                 <th style="width: 110px;">審核狀態</th>
                 <th style="width: 100px;">使用狀態</th>
                 <th style="width: 140px;">建立者 / 更新時間</th>

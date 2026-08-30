@@ -61,8 +61,8 @@ export class StudioView {
 
         <!-- Split Pane Body -->
         <div class="studio-body">
-          <!-- Left Pane: Editor & Console (60%) -->
-          <div class="studio-left-pane">
+          <!-- Left Pane: Editor & Console (50% default) -->
+          <div class="studio-left-pane" id="studio-left-pane">
             <div class="editor-toolbar">
               <div class="editor-tabs">
                 <button class="editor-tab active" id="tab-editor-raw" data-view="raw">
@@ -73,7 +73,7 @@ export class StudioView {
                 </button>
               </div>
               <div class="editor-tools">
-                <span style="font-size: 11px; color: var(--text-muted);">選取代碼可快速挖洞或標記 PII</span>
+                <span style="font-size: 11px; color: var(--text-muted);">選取代碼可快速挖洞或標記敏感欄位</span>
                 <button class="btn btn-outline btn-xs" id="btn-format-sql" title="格式化 SQL">格式化</button>
               </div>
             </div>
@@ -146,8 +146,11 @@ export class StudioView {
             </div>
           </div>
 
-          <!-- Right Pane: Metadata & Governance Form (40% width) -->
-          <div class="studio-right-pane">
+          <!-- Splitter -->
+          <div class="studio-splitter" id="studio-splitter"></div>
+
+          <!-- Right Pane: Metadata & Governance Form (50% default) -->
+          <div class="studio-right-pane" id="studio-right-pane">
             <!-- Card A: Basic Info -->
             <div class="card">
               <div class="card-header">
@@ -225,8 +228,8 @@ export class StudioView {
 
                 <div class="form-group">
                   <label class="form-label">
-                    <span>輸出欄位與 PII 標籤 (AI AST 解析)</span>
-                    <span style="font-size: 11px; color: var(--text-muted);">支援手動修正</span>
+                    <span>輸出欄位與敏感標籤 (AI AST 解析)</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">系統判定為敏感若關閉需填寫理由</span>
                   </label>
                   <div id="ai-columns-wrapper" style="overflow-x: auto;">
                     <table class="column-meta-table">
@@ -235,7 +238,8 @@ export class StudioView {
                           <th>欄位名稱</th>
                           <th>資料型態</th>
                           <th>業務說明</th>
-                          <th style="text-align: center;">敏感</th>
+                          <th style="width: 75px; text-align: center;">系統判定</th>
+                          <th style="width: 75px; text-align: center;">最終敏感</th>
                         </tr>
                       </thead>
                       <tbody id="columns-table-body">
@@ -621,6 +625,60 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
 
     // Submit Review
     this.container.querySelector('#studio-btn-submit-review').onclick = () => this.handleSave(true);
+
+    // Init Splitter
+    this.initSplitter();
+  }
+
+  /**
+   * Init resizable splitter between left editor/console pane and right form pane
+   */
+  initSplitter() {
+    const splitter = this.container.querySelector('#studio-splitter');
+    const leftPane = this.container.querySelector('#studio-left-pane');
+    const studioBody = this.container.querySelector('.studio-body');
+    if (!splitter || !leftPane || !studioBody) return;
+
+    let isDragging = false;
+
+    const onMouseDown = (e) => {
+      isDragging = true;
+      splitter.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    };
+
+    const onMouseMove = (e) => {
+      if (!isDragging) return;
+      const bodyRect = studioBody.getBoundingClientRect();
+      const newLeftWidth = e.clientX - bodyRect.left;
+      const totalWidth = bodyRect.width;
+
+      const minLeft = 280;
+      const minRight = 320;
+      const maxLeft = totalWidth - minRight;
+
+      if (newLeftWidth >= minLeft && newLeftWidth <= maxLeft) {
+        const leftPercent = (newLeftWidth / totalWidth) * 100;
+        leftPane.style.width = `${leftPercent}%`;
+        // Trigger Monaco layout
+        this.sqlEditor?.editor?.layout?.();
+      }
+    };
+
+    const onMouseUp = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      splitter.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      this.sqlEditor?.editor?.layout?.();
+    };
+
+    splitter.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   }
 
   runMockAiAnalysis(showToast = true) {
@@ -732,19 +790,21 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
             mockColumns.push({
               name: colDisplayName,
               type: colType,
-              desc: `${sourceDesc}${isPii ? ' (PII 敏感資訊)' : ''}`,
-              isPii: isPii
+              desc: `${sourceDesc}${isPii ? ' (敏感資訊)' : ''}`,
+              aiSensitive: isPii,
+              isPii: isPii,
+              overrideReason: ''
             });
           }
         });
       }
 
       if (mockColumns.length === 0) {
-        if (currentSql.includes('user_id')) mockColumns.push({ name: 'u.user_id', type: 'VARCHAR(64)', desc: '[來源: u] 用戶唯一識別號', isPii: false });
-        if (currentSql.includes('phone')) mockColumns.push({ name: 'u.phone_number', type: 'VARCHAR(20)', desc: '[來源: u] 用戶聯絡電話 (PII)', isPii: true });
-        if (currentSql.includes('id_card')) mockColumns.push({ name: 'u.id_card_num', type: 'VARCHAR(30)', desc: '[來源: u] 身分證字號 (PII)', isPii: true });
-        if (currentSql.includes('register_date')) mockColumns.push({ name: 'u.register_date', type: 'DATE', desc: '[來源: u] 用戶註冊時間 (PII)', isPii: true });
-        if (currentSql.includes('total_revenue')) mockColumns.push({ name: 'total_revenue', type: 'DECIMAL(12,2)', desc: '消費交易總額 (NTD)', isPii: false });
+        if (currentSql.includes('user_id')) mockColumns.push({ name: 'u.user_id', type: 'VARCHAR(64)', desc: '[來源: u] 用戶唯一識別號', aiSensitive: false, isPii: false, overrideReason: '' });
+        if (currentSql.includes('phone')) mockColumns.push({ name: 'u.phone_number', type: 'VARCHAR(20)', desc: '[來源: u] 用戶聯絡電話', aiSensitive: true, isPii: true, overrideReason: '' });
+        if (currentSql.includes('id_card')) mockColumns.push({ name: 'u.id_card_num', type: 'VARCHAR(30)', desc: '[來源: u] 身分證字號', aiSensitive: true, isPii: true, overrideReason: '' });
+        if (currentSql.includes('register_date')) mockColumns.push({ name: 'u.register_date', type: 'DATE', desc: '[來源: u] 用戶註冊時間', aiSensitive: true, isPii: true, overrideReason: '' });
+        if (currentSql.includes('total_revenue')) mockColumns.push({ name: 'total_revenue', type: 'DECIMAL(12,2)', desc: '消費交易總額 (NTD)', aiSensitive: false, isPii: false, overrideReason: '' });
       }
 
       this.currentTemplate.columns = mockColumns;
@@ -786,25 +846,42 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
     if (!tbody) return;
 
     if (columns.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:12px;">尚無欄位資訊，可點擊上方 AI 重新解析</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:12px;">尚無欄位資訊，可點擊上方 AI 重新解析</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = columns.map((col, idx) => `
-      <tr data-index="${idx}">
-        <td><strong style="font-family: var(--font-mono);">${col.name}</strong></td>
-        <td><span class="badge" style="background:#f1f5f9; color:#475569; font-family:var(--font-mono);">${col.type}</span></td>
-        <td>
-          <input type="text" class="form-input form-input-sm col-desc-input" data-index="${idx}" value="${col.desc || ''}" style="padding: 3px 6px; font-size:12px;" />
-        </td>
-        <td style="text-align: center;">
-          <label class="toggle-switch">
-            <input type="checkbox" class="col-pii-toggle" data-index="${idx}" ${col.isPii ? 'checked' : ''} />
-            <span class="toggle-slider"></span>
-          </label>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = columns.map((col, idx) => {
+      // Ensure aiSensitive is initialized based on isPii or property
+      if (col.aiSensitive === undefined) {
+        col.aiSensitive = !!col.isPii;
+      }
+      const isOverridden = col.aiSensitive && !col.isPii;
+
+      return `
+        <tr data-index="${idx}">
+          <td><strong style="font-family: var(--font-mono);">${col.name}</strong></td>
+          <td><span class="badge" style="background:#f1f5f9; color:#475569; font-family:var(--font-mono); font-size:11px;">${col.type || 'VARCHAR'}</span></td>
+          <td>
+            <input type="text" class="form-input form-input-sm col-desc-input" data-index="${idx}" value="${col.desc || ''}" style="padding: 3px 6px; font-size:12px;" />
+            ${isOverridden ? `
+              <div class="col-override-reason-box">
+                <label>⚠ 系統判定敏感已被手動關閉，請補充解除理由：<span style="color:#dc2626;">*</span></label>
+                <input type="text" class="col-override-reason-input" data-index="${idx}" placeholder="例：此欄位經脫敏處理或非實際個資..." value="${col.overrideReason || ''}" />
+              </div>
+            ` : ''}
+          </td>
+          <td style="text-align: center;">
+            ${col.aiSensitive ? '<span style="color:#d97706; font-size:11px; font-weight:600;">敏感</span>' : '<span style="color:#94a3b8; font-size:11px;">一般</span>'}
+          </td>
+          <td style="text-align: center;">
+            <label class="toggle-switch">
+              <input type="checkbox" class="col-pii-toggle" data-index="${idx}" ${col.isPii ? 'checked' : ''} />
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     // Bind events for columns
     tbody.querySelectorAll('.col-desc-input').forEach(input => {
@@ -814,10 +891,19 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
       };
     });
 
+    tbody.querySelectorAll('.col-override-reason-input').forEach(input => {
+      input.oninput = (e) => {
+        const idx = e.target.dataset.index;
+        this.currentTemplate.columns[idx].overrideReason = e.target.value;
+      };
+    });
+
     tbody.querySelectorAll('.col-pii-toggle').forEach(toggle => {
       toggle.onchange = (e) => {
         const idx = e.target.dataset.index;
         this.currentTemplate.columns[idx].isPii = e.target.checked;
+        // Re-render columns to dynamically show/hide override reason box
+        this.renderColumns(this.currentTemplate.columns);
         this.syncPiiList();
       };
     });
@@ -832,8 +918,10 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
       this.currentTemplate.columns.push({
         name: fieldName,
         type: 'VARCHAR',
-        desc: '標記為敏感個資',
-        isPii: true
+        desc: '標記為敏感資訊',
+        aiSensitive: isPii,
+        isPii: isPii,
+        overrideReason: ''
       });
     }
     this.renderColumns(this.currentTemplate.columns);
@@ -1170,18 +1258,26 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
       return;
     }
 
+    // Check override reasons for columns where AI marked sensitive but user unchecked
+    const columns = this.currentTemplate.columns || [];
+    const missingReasonCols = columns.filter(c => c.aiSensitive && !c.isPii && (!c.overrideReason || !c.overrideReason.trim()));
+    if (missingReasonCols.length > 0) {
+      toast.danger(`欄位 [${missingReasonCols.map(c => c.name).join(', ')}] 已解除系統敏感標記，必須填寫解除理由！`);
+      return;
+    }
+
     // If submitting for review, check attachments and impact
     if (isSubmitForReview) {
       const hasProof = (this.currentTemplate.attachments || []).some(a => a.isSuccessScreenshot);
       if (!hasProof) {
-        toast.danger('送出審核時，卡片 E 必須包含至少一張【執行成功截圖】憑證！');
+        toast.danger('送出審核時，必須包含至少一張【執行成功截圖】憑證！');
         return;
       }
 
       if (this.mode === 'edit') {
         const impactConfirmed = this.container.querySelector('#chk-impact-confirmed')?.checked;
         if (!impactConfirmed) {
-          toast.warning('請勾選卡片 D 的下游影響確認 Checkbox！');
+          toast.warning('請勾選下游影響確認 Checkbox！');
           return;
         }
       }

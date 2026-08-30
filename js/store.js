@@ -2,7 +2,7 @@
  * SQL Template Platform - Global Data Store & State Machine
  */
 
-const STORAGE_KEY = 'sql_template_platform_data_v2';
+const STORAGE_KEY = 'sql_template_platform_data_v3';
 
 const INITIAL_TEMPLATES = [
   {
@@ -49,12 +49,12 @@ GROUP BY u.user_id, u.phone_number, u.id_card_num, u.register_date
 HAVING COUNT(DISTINCT a.activity_date) >= {{min_active_days}};`,
     description: '統計指定推廣渠道註冊之用戶，在指定 7 天區間內的登入留存天數與付費總金額，用於行銷成效 ROI 評估。',
     columns: [
-      { name: 'user_id', type: 'VARCHAR(64)', desc: '用戶唯一識別編號', isPii: false },
-      { name: 'phone_number', type: 'VARCHAR(20)', desc: '用戶手機號碼 (PII)', isPii: true },
-      { name: 'id_card_num', type: 'VARCHAR(30)', desc: '身分證字號 (PII)', isPii: true },
-      { name: 'register_date', type: 'DATE', desc: '用戶註冊日期', isPii: false },
-      { name: 'active_days_7d', type: 'INTEGER', desc: '統計週期內活躍天數', isPii: false },
-      { name: 'total_revenue', type: 'DECIMAL(12,2)', desc: '累計付費訂單金額', isPii: false }
+      { name: 'user_id', type: 'VARCHAR(64)', desc: '用戶唯一識別編號', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'phone_number', type: 'VARCHAR(20)', desc: '用戶手機號碼', aiSensitive: true, isPii: true, overrideReason: '' },
+      { name: 'id_card_num', type: 'VARCHAR(30)', desc: '身分證字號', aiSensitive: true, isPii: true, overrideReason: '' },
+      { name: 'register_date', type: 'DATE', desc: '用戶註冊日期', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'active_days_7d', type: 'INTEGER', desc: '統計週期內活躍天數', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'total_revenue', type: 'DECIMAL(12,2)', desc: '累計付費訂單金額', aiSensitive: false, isPii: false, overrideReason: '' }
     ],
     parameters: [
       { name: 'start_date', type: 'Date', defaultVal: '2026-08-01', required: true, desc: '統計起始日期 (YYYY-MM-DD)' },
@@ -152,12 +152,12 @@ WHERE t.period = {{accounting_period}}
   AND t.audit_status = {{audit_status}};`,
     description: '財務部專用月結各銀行帳號出入金對帳總表，涉及高機敏銀行帳號與金流資訊。',
     columns: [
-      { name: 'tx_id', type: 'VARCHAR(32)', desc: '交易唯一序號', isPii: false },
-      { name: 'account_no', type: 'VARCHAR(30)', desc: '銀行帳號 (PII)', isPii: true },
-      { name: 'bank_code', type: 'VARCHAR(10)', desc: '銀行分行代碼', isPii: false },
-      { name: 'amount', type: 'DECIMAL(16,2)', desc: '交易淨額 (PII)', isPii: true },
-      { name: 'tax_amount', type: 'DECIMAL(12,2)', desc: '應繳稅額', isPii: false },
-      { name: 'created_at', type: 'TIMESTAMP', desc: '入帳時間', isPii: false }
+      { name: 'tx_id', type: 'VARCHAR(32)', desc: '交易唯一序號', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'account_no', type: 'VARCHAR(30)', desc: '銀行帳號', aiSensitive: true, isPii: true, overrideReason: '' },
+      { name: 'bank_code', type: 'VARCHAR(10)', desc: '銀行分行代碼', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'amount', type: 'DECIMAL(16,2)', desc: '交易淨額', aiSensitive: true, isPii: true, overrideReason: '' },
+      { name: 'tax_amount', type: 'DECIMAL(12,2)', desc: '應繳稅額', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'created_at', type: 'TIMESTAMP', desc: '入帳時間', aiSensitive: false, isPii: false, overrideReason: '' }
     ],
     parameters: [
       { name: 'accounting_period', type: 'String', defaultVal: "'202607'", required: true, desc: '月結會計週期 (YYYYMM)' },
@@ -261,11 +261,11 @@ WHERE o.order_date BETWEEN {{start_date}} AND {{end_date}}
 GROUP BY o.order_date, o.store_id;`,
     description: '計算指定期間內各實體與電商門市之總訂單數、總營收與退貨金額統計。',
     columns: [
-      { name: 'order_date', type: 'DATE', desc: '訂單日期', isPii: false },
-      { name: 'store_id', type: 'VARCHAR(20)', desc: '門市編號', isPii: false },
-      { name: 'total_orders', type: 'BIGINT', desc: '總成交訂單數', isPii: false },
-      { name: 'gross_sales', type: 'DECIMAL(14,2)', desc: '營業總額', isPii: false },
-      { name: 'refund_sales', type: 'DECIMAL(14,2)', desc: '退款折讓金額', isPii: false }
+      { name: 'order_date', type: 'DATE', desc: '訂單日期', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'store_id', type: 'VARCHAR(20)', desc: '門市編號', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'total_orders', type: 'BIGINT', desc: '總成交訂單數', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'gross_sales', type: 'DECIMAL(14,2)', desc: '營業總額', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'refund_sales', type: 'DECIMAL(14,2)', desc: '退款折讓金額', aiSensitive: false, isPii: false, overrideReason: '' }
     ],
     parameters: [
       { name: 'start_date', type: 'Date', defaultVal: "'2026-08-01'", required: true, desc: '查詢起始日期 (YYYY-MM-DD)' },
@@ -313,10 +313,10 @@ WHERE r.risk_level IN ({{risk_levels}})
   AND r.updated_at >= {{since_date}};`,
     description: '風控部提取高風險用戶特徵，供反詐欺模型及人工徵信覆核使用。',
     columns: [
-      { name: 'user_id', type: 'VARCHAR(64)', desc: '用戶唯一識別編號', isPii: false },
-      { name: 'credit_score', type: 'INTEGER', desc: '信用評分 (PII)', isPii: true },
-      { name: 'overdue_count_90d', type: 'INTEGER', desc: '近90天逾期次數', isPii: false },
-      { name: 'risk_level', type: 'VARCHAR(20)', desc: '風險評級', isPii: false }
+      { name: 'user_id', type: 'VARCHAR(64)', desc: '用戶唯一識別編號', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'credit_score', type: 'INTEGER', desc: '信用評分', aiSensitive: true, isPii: true, overrideReason: '' },
+      { name: 'overdue_count_90d', type: 'INTEGER', desc: '近90天逾期次數', aiSensitive: false, isPii: false, overrideReason: '' },
+      { name: 'risk_level', type: 'VARCHAR(20)', desc: '風險評級', aiSensitive: false, isPii: false, overrideReason: '' }
     ],
     parameters: [
       { name: 'risk_levels', type: 'String', defaultVal: "'HIGH', 'CRITICAL'", required: true, desc: '風險等級過濾' },
