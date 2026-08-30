@@ -7,6 +7,7 @@ import { store } from '../store.js';
 import { toast } from '../components/toast.js';
 import { SqlReadOnlyEditor } from '../components/editor.js';
 import { ModalManager } from '../components/modal.js';
+import { importPreviewModal } from '../components/import-modal.js';
 
 export class CatalogView {
   constructor(container) {
@@ -35,17 +36,22 @@ export class CatalogView {
 
   render() {
     this.container.innerHTML = `
-      <div class="catalog-container">
+      <div class="catalog-container" id="catalog-dropzone">
         <!-- Catalog Header -->
         <div class="catalog-header">
           <div class="catalog-title-group">
             <h1>SQL 樣板資產目錄 (Data Assets Catalog)</h1>
             <p>全公司標準化數據查詢與 API 調用樣板，點擊任一列可快速檢視 SQL 內容與調用方式</p>
           </div>
-          <div style="display: flex; gap: 10px;">
-            <button class="btn btn-outline btn-sm" id="btn-batch-export-all">
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="file" id="catalog-file-import" accept=".json,application/json" style="display: none;" />
+            <button class="btn btn-outline btn-sm" id="btn-import-tpl" title="匯入 SQL Template JSON 檔 (一次最多 10 個)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              匯入
+            </button>
+            <button class="btn btn-outline btn-sm" id="btn-batch-export-all" title="匯出 SQL Template">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              匯出全量 Catalog
+              匯出
             </button>
             <button class="btn btn-primary btn-sm" id="btn-create-new-tpl">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -166,15 +172,74 @@ export class CatalogView {
     };
 
     this.container.querySelector('#btn-batch-export-all').onclick = () => {
-      const allData = store.getAll();
-      const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `sql_templates_catalog_${new Date().toISOString().substring(0, 10)}.json`;
-      a.click();
-      toast.success('全量 Catalog 匯出完成！');
+      store.exportCatalogJson();
+      toast.success('全量 SQL Template Catalog 匯出完成！');
     };
+
+    // Import Trigger & File Handler
+    const fileInput = this.container.querySelector('#catalog-file-import');
+    const btnImport = this.container.querySelector('#btn-import-tpl');
+
+    if (btnImport && fileInput) {
+      btnImport.onclick = () => {
+        fileInput.value = '';
+        fileInput.click();
+      };
+
+      fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          this.processImportFile(file);
+        }
+      };
+    }
+
+    // Drag and drop support
+    const dropzone = this.container.querySelector('#catalog-dropzone');
+    if (dropzone) {
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          const file = e.dataTransfer.files[0];
+          if (file.name.endsWith('.json')) {
+            this.processImportFile(file);
+          } else {
+            toast.error('僅支援上傳 .json 格式檔案');
+          }
+        }
+      });
+    }
+  }
+
+  processImportFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        const result = store.validateImportData(parsed);
+        if (!result.valid) {
+          toast.error(result.error);
+          return;
+        }
+
+        toast.info(`已載入 ${result.items.length} 筆 Template，開啟匯入預覽工作台...`);
+        importPreviewModal.open(result.items, () => {
+          this.renderTable();
+        });
+      } catch (err) {
+        console.error('Import parse error:', err);
+        toast.error('檔案解析失敗，請確認檔案是否為合法的 JSON 格式。');
+      }
+    };
+    reader.onerror = () => {
+      toast.error('讀取檔案失敗');
+    };
+    reader.readAsText(file, 'utf-8');
   }
 
   getFilteredData() {

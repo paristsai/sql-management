@@ -6,11 +6,12 @@ import { store } from '../store.js';
 import { toast } from '../components/toast.js';
 import { SqlEditor } from '../components/editor.js';
 import { ModalManager } from '../components/modal.js';
+import { importPreviewModal } from '../components/import-modal.js';
 
 export class StudioView {
   constructor(container) {
     this.container = container;
-    this.mode = 'create'; // 'create' | 'edit'
+    this.mode = 'create'; // 'create' | 'edit' | 'batch_import'
     this.currentId = null;
     this.currentTemplate = null;
     this.sqlEditor = null;
@@ -19,18 +20,45 @@ export class StudioView {
     this.rawSqlCache = '';
     this.templateSqlCache = '';
     this.initialSnapshot = null;
+    this.batchItems = [];
+    this.batchIndex = 0;
+    this.boundBatchKeyHandler = this.handleBatchKeyDown.bind(this);
   }
 
   async init(params = {}) {
     this.mode = params.mode || 'create';
     this.currentId = params.id || null;
+    this.batchItems = params.items || [];
+    this.batchIndex = params.currentIndex || 0;
+
     this.renderLayout();
     await this.initEditor();
     this.loadTemplateData();
     this.bindEvents();
+
+    if (this.mode === 'batch_import') {
+      window.addEventListener('keydown', this.boundBatchKeyHandler);
+    }
+  }
+
+  handleBatchKeyDown(e) {
+    if (this.mode !== 'batch_import') return;
+    const targetTag = e.target.tagName.toLowerCase();
+    if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') {
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      this.prevBatchItem();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      this.nextBatchItem();
+    }
   }
 
   renderLayout() {
+    const isBatch = this.mode === 'batch_import';
+
     this.container.innerHTML = `
       <div class="studio-container">
         <!-- Top Bar -->
@@ -40,9 +68,9 @@ export class StudioView {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
               返回目錄
             </button>
-            <span class="studio-mode-badge" id="studio-mode-badge">新建模式</span>
+            <span class="studio-mode-badge" id="studio-mode-badge">${isBatch ? '批次匯入工作台' : (this.mode === 'edit' ? '編輯模式' : '新建模式')}</span>
             <div class="studio-template-title" id="studio-header-title">
-              新建 SQL Template
+              ${isBatch ? '批次 SQL Template 檢閱與編輯' : '新建 SQL Template'}
             </div>
             <div class="badge badge-draft" id="studio-status-badge">
               <span class="badge-dot"></span> 草稿
@@ -50,16 +78,51 @@ export class StudioView {
           </div>
 
           <div class="studio-header-actions">
+            ${isBatch ? `
+              <div class="import-mode-switcher-group" style="margin-right: 8px; white-space: nowrap; flex-shrink: 0;">
+                <label for="studio-view-mode-select" style="font-size: 11px; white-space: nowrap; flex-shrink: 0;">展示模式:</label>
+                <select class="form-select form-select-xs" id="studio-view-mode-select" style="font-size: 11px; padding: 2px 6px; width: auto;">
+                  <option value="workbench" selected>工作台模式 (Studio)</option>
+                  <option value="fullscreen">滿版全螢幕 (Overlay)</option>
+                  <option value="floating">懸浮彈窗 (Dialog)</option>
+                </select>
+              </div>
+            ` : ''}
             <button class="btn btn-secondary btn-sm" id="studio-btn-save-draft">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-              儲存草稿
+              ${isBatch ? '儲存草稿 (當前)' : '儲存草稿'}
             </button>
             <button class="btn btn-primary btn-sm" id="studio-btn-submit-review">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              送出審核
+              ${isBatch ? '送出審核 (當前)' : '送出審核'}
             </button>
           </div>
         </div>
+
+        <!-- Optional Batch Navigation Bar in Studio -->
+        ${isBatch ? `
+          <div class="import-tabs-bar" id="studio-batch-tabs-bar" style="background:#f8fafc;border-bottom:1px solid var(--border-color);padding:6px 20px;">
+            <div class="import-nav-controls">
+              <button class="import-nav-btn" id="studio-batch-prev" title="切換至上一個 (←)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <span class="import-counter-badge" id="studio-batch-counter">1 / 1</span>
+              <button class="import-nav-btn" id="studio-batch-next" title="切換至下一個 (→)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            <div class="import-tabs-scroll-area" id="studio-batch-tabs-container">
+              <!-- Rendered via renderBatchTabs() -->
+            </div>
+
+            <div class="import-shortcut-hint">
+              <span>快捷鍵:</span>
+              <span class="import-shortcut-key">←</span>
+              <span class="import-shortcut-key">→</span>
+            </div>
+          </div>
+        ` : ''}
 
         <!-- Split Pane Body -->
         <div class="studio-body">
@@ -452,6 +515,8 @@ export class StudioView {
       this.container.querySelector('#impact-systems-count').textContent = (tpl.impact && tpl.impact.affectedSystems) || '3';
       this.container.querySelector('#impact-users-count').textContent = (tpl.impact && tpl.impact.affectedUsers) || '12';
 
+    } else if (this.mode === 'batch_import' && this.batchItems.length > 0) {
+      this.loadBatchItem(this.batchIndex);
     } else {
       // Create mode
       const defaultDemoSql = `SELECT 
@@ -512,14 +577,230 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
     }
   }
 
+  loadBatchItem(index) {
+    if (index < 0 || index >= this.batchItems.length) return;
+    this.batchIndex = index;
+    const item = this.batchItems[index];
+    this.currentTemplate = JSON.parse(JSON.stringify(item));
+
+    this.container.querySelector('#studio-mode-badge').textContent = `批次匯入 (${index + 1}/${this.batchItems.length})`;
+    this.container.querySelector('#studio-header-title').textContent = `[${item.id || '未定 ID'}] ${item.name || '未命名樣板'}`;
+
+    const badge = this.container.querySelector('#studio-status-badge');
+    if (item.isSaved) {
+      badge.className = item.saveStatus === 'review' ? 'badge badge-review' : 'badge badge-draft';
+      badge.innerHTML = `<span class="badge-dot"></span> ${item.saveStatus === 'review' ? '已送審' : '已儲存草稿'}`;
+    } else {
+      badge.className = 'badge badge-draft';
+      badge.innerHTML = '<span class="badge-dot"></span> 待儲存';
+    }
+
+    const inputId = this.container.querySelector('#input-tpl-id');
+    if (inputId) {
+      inputId.value = item.id || '';
+      inputId.disabled = false;
+    }
+
+    const inputName = this.container.querySelector('#input-tpl-name');
+    if (inputName) inputName.value = item.name || '';
+
+    const inputDesc = this.container.querySelector('#input-tpl-desc');
+    if (inputDesc) inputDesc.value = item.description || '';
+
+    // SQL Cache
+    this.rawSqlCache = item.rawSql || item.templateSql || '';
+    this.templateSqlCache = item.templateSql || item.rawSql || '';
+
+    this.activeEditorTab = 'raw';
+    if (this.sqlEditor) {
+      this.sqlEditor.setValue(this.rawSqlCache);
+    }
+
+    // Type & Dept
+    if (item.type === 'dept') {
+      const radioDept = this.container.querySelector('input[name="tpl-type"][value="dept"]');
+      if (radioDept) radioDept.checked = true;
+      const grpDept = this.container.querySelector('#group-departments');
+      if (grpDept) grpDept.style.display = 'block';
+      this.container.querySelectorAll('.dept-checkbox').forEach(cb => {
+        cb.checked = (item.departments || []).includes(cb.value);
+      });
+    } else {
+      const radioComp = this.container.querySelector('input[name="tpl-type"][value="company"]');
+      if (radioComp) radioComp.checked = true;
+      const grpDept = this.container.querySelector('#group-departments');
+      if (grpDept) grpDept.style.display = 'none';
+    }
+
+    // DBs
+    this.container.querySelectorAll('.db-checkbox').forEach(cb => {
+      cb.checked = (item.databases || []).includes(cb.value);
+    });
+
+    this.renderColumns(item.columns || []);
+    this.renderParameters(item.parameters || []);
+    this.renderAttachments(item.attachments || []);
+    this.renderMockParams();
+    this.refreshEditorHighlights();
+
+    this.validateTplId();
+    this.renderBatchTabs();
+  }
+
+  renderBatchTabs() {
+    if (this.mode !== 'batch_import') return;
+    const container = this.container.querySelector('#studio-batch-tabs-container');
+    const counter = this.container.querySelector('#studio-batch-counter');
+    const btnPrev = this.container.querySelector('#studio-batch-prev');
+    const btnNext = this.container.querySelector('#studio-batch-next');
+
+    if (!container) return;
+
+    if (counter) counter.textContent = `${this.batchIndex + 1} / ${this.batchItems.length}`;
+    if (btnPrev) btnPrev.disabled = this.batchIndex === 0;
+    if (btnNext) btnNext.disabled = this.batchIndex === this.batchItems.length - 1;
+
+    container.innerHTML = this.batchItems.map((item, idx) => {
+      const isActive = idx === this.batchIndex;
+      let statusDotClass = 'status-dot-pending';
+      let statusClass = '';
+      if (item.isSaved) {
+        statusDotClass = 'status-dot-saved';
+        statusClass = 'is-saved';
+      } else if (item.validationErrors && item.validationErrors.length > 0) {
+        statusDotClass = 'status-dot-error';
+        statusClass = 'has-error';
+      }
+
+      return `
+        <button class="import-tab-pill ${isActive ? 'active' : ''} ${statusClass}" data-batch-idx="${idx}">
+          <span class="status-dot ${statusDotClass}"></span>
+          <span class="import-tab-title" title="${item.name || item.id}">
+            ${idx + 1}. ${item.name || item.id}
+          </span>
+        </button>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.import-tab-pill').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.batchIdx, 10);
+        this.saveCurrentBatchFormState();
+        this.loadBatchItem(idx);
+      };
+    });
+  }
+
+  validateTplId() {
+    const idInput = this.container.querySelector('#input-tpl-id');
+    const idStatus = this.container.querySelector('#tpl-id-status');
+    if (!idInput || !idStatus) return true;
+
+    const val = idInput.value.trim();
+    if (!val) {
+      idStatus.textContent = '';
+      return false;
+    }
+    const exists = store.checkIdExists(val, this.mode === 'edit' ? this.currentId : null);
+    if (exists && (this.mode !== 'batch_import' || !this.currentTemplate?.isSaved)) {
+      idStatus.style.color = 'var(--danger)';
+      idStatus.textContent = 'ID 已存在重複！';
+      idInput.classList.add('is-invalid');
+      if (this.mode === 'batch_import') {
+        const item = this.batchItems[this.batchIndex];
+        if (item) item.validationErrors = [`ID「${val}」與既有樣板衝突`];
+        this.renderBatchTabs();
+      }
+      return false;
+    } else {
+      idStatus.style.color = 'var(--success-text)';
+      idStatus.textContent = '✓ ID 可使用';
+      idInput.classList.remove('is-invalid');
+      if (this.mode === 'batch_import') {
+        const item = this.batchItems[this.batchIndex];
+        if (item) item.validationErrors = [];
+        this.renderBatchTabs();
+      }
+      return true;
+    }
+  }
+
+  saveCurrentBatchFormState() {
+    if (this.mode !== 'batch_import') return;
+    const item = this.batchItems[this.batchIndex];
+    if (!item) return;
+
+    const inputId = this.container.querySelector('#input-tpl-id');
+    if (inputId) item.id = inputId.value.trim();
+
+    const inputName = this.container.querySelector('#input-tpl-name');
+    if (inputName) item.name = inputName.value.trim();
+
+    const inputDesc = this.container.querySelector('#input-tpl-desc');
+    if (inputDesc) item.description = inputDesc.value;
+
+    if (this.activeEditorTab === 'raw') {
+      item.rawSql = this.sqlEditor.getValue();
+    } else {
+      item.templateSql = this.sqlEditor.getValue();
+    }
+  }
+
+  prevBatchItem() {
+    if (this.batchIndex > 0) {
+      this.saveCurrentBatchFormState();
+      this.loadBatchItem(this.batchIndex - 1);
+    }
+  }
+
+  nextBatchItem() {
+    if (this.batchIndex < this.batchItems.length - 1) {
+      this.saveCurrentBatchFormState();
+      this.loadBatchItem(this.batchIndex + 1);
+    }
+  }
+
   bindEvents() {
     // Navigation Back / Cancel
-    this.container.querySelector('#studio-btn-back').onclick = () => window.AppRouter.navigate('catalog');
-    this.container.querySelector('#studio-btn-cancel').onclick = () => {
-      if (confirm('確定要放棄當前所有未儲存的變更並返回目錄？')) {
-        window.AppRouter.navigate('catalog');
+    this.container.querySelector('#studio-btn-back').onclick = () => {
+      if (this.mode === 'batch_import') {
+        window.removeEventListener('keydown', this.boundBatchKeyHandler);
       }
+      window.AppRouter.navigate('catalog');
     };
+
+    const btnCancel = this.container.querySelector('#studio-btn-cancel');
+    if (btnCancel) {
+      btnCancel.onclick = () => {
+        if (confirm('確定要放棄當前所有未儲存的變更並返回目錄？')) {
+          if (this.mode === 'batch_import') {
+            window.removeEventListener('keydown', this.boundBatchKeyHandler);
+          }
+          window.AppRouter.navigate('catalog');
+        }
+      };
+    }
+
+    // Batch Navigation Buttons
+    const btnBatchPrev = this.container.querySelector('#studio-batch-prev');
+    const btnBatchNext = this.container.querySelector('#studio-batch-next');
+    if (btnBatchPrev) btnBatchPrev.onclick = () => this.prevBatchItem();
+    if (btnBatchNext) btnBatchNext.onclick = () => this.nextBatchItem();
+
+    // Mode Switcher in Studio
+    const modeSelect = this.container.querySelector('#studio-view-mode-select');
+    if (modeSelect) {
+      modeSelect.onchange = () => {
+        const targetMode = modeSelect.value;
+        localStorage.setItem('import_preview_mode', targetMode);
+        if (targetMode === 'floating' || targetMode === 'fullscreen') {
+          this.saveCurrentBatchFormState();
+          window.removeEventListener('keydown', this.boundBatchKeyHandler);
+          window.AppRouter.navigate('catalog');
+          importPreviewModal.open(this.batchItems);
+        }
+      };
+    }
 
     // Editor Tab switch (Raw SQL vs Template SQL)
     const tabRaw = this.container.querySelector('#tab-editor-raw');
@@ -588,24 +869,11 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
 
     // ID live duplicate check
     const idInput = this.container.querySelector('#input-tpl-id');
-    const idStatus = this.container.querySelector('#tpl-id-status');
-    idInput.oninput = () => {
-      const val = idInput.value.trim();
-      if (!val) {
-        idStatus.textContent = '';
-        return;
-      }
-      const exists = store.checkIdExists(val, this.mode === 'edit' ? this.currentId : null);
-      if (exists) {
-        idStatus.style.color = 'var(--danger)';
-        idStatus.textContent = '❌ ID 已存在重複！';
-        idInput.classList.add('is-invalid');
-      } else {
-        idStatus.style.color = 'var(--success-text)';
-        idStatus.textContent = '✓ ID 可使用';
-        idInput.classList.remove('is-invalid');
-      }
-    };
+    if (idInput) {
+      idInput.oninput = () => {
+        this.validateTplId();
+      };
+    }
 
     // AI Analyze Button
     this.container.querySelector('#btn-ai-analyze').onclick = () => {
@@ -1355,6 +1623,27 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
 
     store.saveTemplate(payload);
 
+    if (this.mode === 'batch_import') {
+      const currentBatchItem = this.batchItems[this.batchIndex];
+      if (currentBatchItem) {
+        currentBatchItem.id = tplId;
+        currentBatchItem.name = tplName;
+        currentBatchItem.isSaved = true;
+        currentBatchItem.saveStatus = isSubmitForReview ? 'review' : 'draft';
+        currentBatchItem.validationErrors = [];
+      }
+
+      toast.success(`[批次 ${this.batchIndex + 1}/${this.batchItems.length}] ${tplId} 已成功${isSubmitForReview ? '送出審核' : '儲存為草稿'}！`);
+      this.loadBatchItem(this.batchIndex);
+
+      // Check if all items saved
+      const allDone = this.batchItems.every(item => item.isSaved);
+      if (allDone) {
+        toast.info('恭喜！批次匯入的所有 Template 皆已全數儲存/送審完畢。');
+      }
+      return;
+    }
+
     if (isSubmitForReview) {
       toast.success(`Template ${tplId} 已成功送出審核！`);
       window.AppRouter.navigate('review', { id: tplId });
@@ -1364,3 +1653,4 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
     }
   }
 }
+

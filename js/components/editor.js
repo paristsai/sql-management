@@ -192,6 +192,18 @@ export class SqlEditor {
     }
   }
 
+  destroy() {
+    this.hidePopover();
+    if (this.popoverElement && this.popoverElement.parentElement) {
+      this.popoverElement.parentElement.removeChild(this.popoverElement);
+      this.popoverElement = null;
+    }
+    if (this.editor) {
+      this.editor.dispose();
+      this.editor = null;
+    }
+  }
+
   escapeHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }

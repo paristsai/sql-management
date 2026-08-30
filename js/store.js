@@ -527,6 +527,105 @@ class DataStore {
     this.save();
   }
 
+  /**
+   * Export all templates as JSON download
+   */
+  exportCatalogJson() {
+    const exportData = {
+      exportVersion: '2.4.0',
+      exportedAt: new Date().toISOString(),
+      count: this.templates.length,
+      templates: this.templates
+    };
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchor = document.createElement('a');
+    const filename = `datastudio_catalog_export_${new Date().toISOString().substring(0, 10)}.json`;
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', filename);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  /**
+   * Validate parsed import templates array
+   * Returns: { valid: boolean, error?: string, items: Array }
+   */
+  validateImportData(rawJson) {
+    let items = [];
+    if (Array.isArray(rawJson)) {
+      items = rawJson;
+    } else if (rawJson && Array.isArray(rawJson.templates)) {
+      items = rawJson.templates;
+    } else if (rawJson && Array.isArray(rawJson.items)) {
+      items = rawJson.items;
+    } else if (rawJson && typeof rawJson === 'object') {
+      items = [rawJson];
+    } else {
+      return { valid: false, error: '檔案格式不符合 JSON 結構規範' };
+    }
+
+    if (items.length === 0) {
+      return { valid: false, error: '匯入檔案中未包含任何 SQL Template 資料' };
+    }
+
+    if (items.length > 10) {
+      return { 
+        valid: false, 
+        error: `單次匯入最多僅支援 10 個 SQL Template（目前檔案內含 ${items.length} 個），已為您阻擋匯入。` 
+      };
+    }
+
+    // Sanitize & validate each item
+    const validatedItems = items.map((item, idx) => {
+      const id = (item.id || `TPL_IMPORTED_${Date.now()}_${idx + 1}`).trim();
+      const name = (item.name || `未命名樣板 ${idx + 1}`).trim();
+      const rawSql = item.rawSql || '';
+      const templateSql = item.templateSql || rawSql || '';
+      const exists = this.checkIdExists(id);
+
+      const errors = [];
+      if (!item.id || item.id.trim() === '') {
+        errors.push('缺少 Template ID');
+      } else if (exists) {
+        errors.push(`ID「${id}」與既有樣板衝突，請修改為新 ID`);
+      }
+
+      if (!name) {
+        errors.push('缺少樣板名稱');
+      }
+
+      if (!rawSql && !templateSql) {
+        errors.push('缺少 SQL 內容');
+      }
+
+      return {
+        id,
+        name,
+        type: item.type || 'dept',
+        departments: Array.isArray(item.departments) && item.departments.length ? item.departments : ['數據工程部'],
+        databases: Array.isArray(item.databases) && item.databases.length ? item.databases : ['DBName1'],
+        rawSql,
+        templateSql,
+        description: item.description || '',
+        columns: Array.isArray(item.columns) ? item.columns : [],
+        parameters: Array.isArray(item.parameters) ? item.parameters : [],
+        piiFields: Array.isArray(item.piiFields) ? item.piiFields : [],
+        attachments: [], // 匯入之 Template 執行憑證與附件需在目標環境重新產生/上傳，預設為空
+        reviewStatus: 'Draft',
+        usageStatus: 'Disabled',
+        author: item.author || 'Current User (Imported)',
+        assignee: item.assignee || 'John Doe (Data Architect)',
+        isSaved: false,
+        saveStatus: null, // 'draft' | 'review' | null
+        validationErrors: errors
+      };
+    });
+
+    return { valid: true, items: validatedItems };
+  }
+
   resetToDefaults() {
     this.templates = JSON.parse(JSON.stringify(INITIAL_TEMPLATES));
     this.save();
@@ -559,3 +658,4 @@ class DataStore {
 }
 
 export const store = new DataStore();
+
