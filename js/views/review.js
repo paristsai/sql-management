@@ -153,37 +153,33 @@ export class ReviewView {
       <div class="review-stat-card">
         <div class="review-stat-info">
           <span class="review-stat-label">待我審核 (Assign to me)</span>
-          <span class="review-stat-value" style="color:#d97706;">${pendingAssigned}</span>
+          <span class="review-stat-value">${pendingAssigned}</span>
           <span class="review-stat-desc">目前指派給您的待辦</span>
         </div>
-        <div class="review-stat-icon-wrap stat-icon-amber" style="font-weight:bold; font-size:16px;">PEND</div>
       </div>
 
       <div class="review-stat-card">
         <div class="review-stat-info">
           <span class="review-stat-label">全平台審核中 (In Review)</span>
-          <span class="review-stat-value" style="color:#2563eb;">${totalPending}</span>
+          <span class="review-stat-value">${totalPending}</span>
           <span class="review-stat-desc">等待主管覆核之樣板</span>
         </div>
-        <div class="review-stat-icon-wrap stat-icon-blue" style="font-weight:bold; font-size:16px;">REV</div>
       </div>
 
       <div class="review-stat-card">
         <div class="review-stat-info">
           <span class="review-stat-label">已核准發布 (Approved)</span>
-          <span class="review-stat-value" style="color:#059669;">${totalApproved}</span>
+          <span class="review-stat-value">${totalApproved}</span>
           <span class="review-stat-desc">正式發布生效之 SQL</span>
         </div>
-        <div class="review-stat-icon-wrap stat-icon-emerald" style="font-weight:bold; font-size:16px;">OK</div>
       </div>
 
       <div class="review-stat-card">
         <div class="review-stat-info">
           <span class="review-stat-label">我的送審紀錄 (My Requests)</span>
-          <span class="review-stat-value" style="color:#475569;">${mySubmissions}</span>
+          <span class="review-stat-value">${mySubmissions}</span>
           <span class="review-stat-desc">您建立或送審的項目</span>
         </div>
-        <div class="review-stat-icon-wrap stat-icon-slate" style="font-weight:bold; font-size:16px;">MY</div>
       </div>
     `;
   }
@@ -268,51 +264,51 @@ export class ReviewView {
     }
 
     tbody.innerHTML = list.map(t => {
-      // Status Tag
+      // Status
       let statusTag = '';
       if (t.reviewStatus === 'In Review') {
-        statusTag = `<span class="ant-tag ant-tag-processing">審核中</span>`;
+        statusTag = `<span style="color:#d97706; font-weight:500; font-size:12px;">審核中</span>`;
       } else if (t.reviewStatus === 'Approved') {
-        statusTag = `<span class="ant-tag ant-tag-success">已核准</span>`;
+        statusTag = `<span style="color:#059669; font-weight:500; font-size:12px;">已核准</span>`;
       } else {
-        statusTag = `<span class="ant-tag ant-tag-default">草稿/退回</span>`;
+        statusTag = `<span style="color:#64748b; font-weight:500; font-size:12px;">草稿</span>`;
       }
 
-      // PII Tag
-      const piiFields = t.piiFields || [];
+      // PII
       let piiTag = '';
+      const piiFields = t.piiFields || [];
       if (piiFields.length > 0) {
-        piiTag = `<span class="ant-tag ant-tag-error" title="${piiFields.join(', ')}">${piiFields.length} 個 PII</span>`;
+        piiTag = `<span style="color:#dc2626; font-size:12px; font-weight:500;" title="${piiFields.join(', ')}">${piiFields.length} 個 PII</span>`;
       } else {
-        piiTag = `<span class="ant-tag ant-tag-success">無敏感欄位</span>`;
+        piiTag = `<span style="color:#94a3b8; font-size:12px;">無</span>`;
       }
 
       // Dept Tags
-      const deptBadges = (t.departments || []).map(d => `<span class="ant-tag ant-tag-purple" style="font-size:11px;">${d}</span>`).join(' ');
+      const deptBadges = (t.departments || []).join('、 ') || '-';
 
       // Database
-      const dbBadge = (t.databases || []).map(db => `<span class="ant-tag ant-tag-default" style="font-size:11px;">${db}</span>`).join(' ');
+      const dbBadge = (t.databases || []).join(', ') || '-';
 
       return `
         <tr class="ant-table-row" data-id="${t.id}">
-          <td style="font-family: var(--font-mono); font-weight: 600; color: #1677ff;">${t.id}</td>
+          <td style="font-family: var(--font-mono); font-weight: 600; color: #0f172a;">${t.id}</td>
           <td>
-            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">${t.name}</div>
-            <div class="text-xs text-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;">
+            <div style="font-weight: 500; color: #0f172a; margin-bottom: 2px;">${t.name}</div>
+            <div class="text-xs text-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; color:#64748b;">
               ${t.description || '無描述'}
             </div>
           </td>
-          <td>${deptBadges || '<span class="text-muted text-xs">-</span>'}</td>
-          <td>${dbBadge || '<span class="text-muted text-xs">-</span>'}</td>
+          <td style="color:#475569; font-size:12px;">${deptBadges}</td>
+          <td style="color:#475569; font-size:12px; font-family:var(--font-mono);">${dbBadge}</td>
           <td>${piiTag}</td>
           <td>
-            <div style="font-size: 12px; font-weight: 500;">${t.author || '-'}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
-              審核：<strong>${t.assignee || '未指定'}</strong>
+            <div style="font-size: 12px; font-weight: 500; color: #1e293b;">${t.author || '-'}</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
+              ${t.assignee ? `審核：${t.assignee}` : '未指定'}
             </div>
           </td>
           <td>${statusTag}</td>
-          <td style="font-size: 12px; color: var(--text-secondary);">${t.updatedAt || '-'}</td>
+          <td style="font-size: 12px; color: #94a3b8;">${t.updatedAt || '-'}</td>
         </tr>
       `;
     }).join('');
@@ -348,18 +344,27 @@ export class ReviewView {
 
     if (!overlay || !modalBody) return;
 
-    titleEl.textContent = `[${tpl.id}] ${tpl.name}`;
-    typeBadge.textContent = tpl.type === 'dept' ? '部門專用 SQL' : '全公司通用 SQL';
+    titleEl.textContent = `${tpl.name}`;
+    titleEl.style.fontSize = '15px';
+    titleEl.style.fontWeight = '600';
+    titleEl.style.color = '#0f172a';
+
+    typeBadge.textContent = tpl.id;
+    typeBadge.className = '';
+    typeBadge.style.cssText = 'font-family: var(--font-mono); font-size: 12px; color: #64748b; font-weight: 500;';
 
     if (tpl.reviewStatus === 'In Review') {
-      statusBadge.className = 'ant-tag ant-tag-processing';
-      statusBadge.textContent = '審核中 (In Review)';
+      statusBadge.className = '';
+      statusBadge.style.cssText = 'font-size: 12px; color: #d97706; font-weight: 500; margin-left: 6px;';
+      statusBadge.textContent = '• 審核中';
     } else if (tpl.reviewStatus === 'Approved') {
-      statusBadge.className = 'ant-tag ant-tag-success';
-      statusBadge.textContent = '已核准發布 (Approved)';
+      statusBadge.className = '';
+      statusBadge.style.cssText = 'font-size: 12px; color: #059669; font-weight: 500; margin-left: 6px;';
+      statusBadge.textContent = '• 已核准上線';
     } else {
-      statusBadge.className = 'ant-tag ant-tag-default';
-      statusBadge.textContent = '草稿 / 退回 (Draft)';
+      statusBadge.className = '';
+      statusBadge.style.cssText = 'font-size: 12px; color: #64748b; font-weight: 500; margin-left: 6px;';
+      statusBadge.textContent = '• 草稿';
     }
 
     // Check if diff is available (needs at least 1 previous version)
@@ -608,133 +613,130 @@ export class ReviewView {
    * Build static HTML for the right info pane (cards A, B, C, E + Timeline stubs)
    */
   buildReadOnlyInfoPaneHTML(tpl) {
-    // Card A: Basic Info
-    const deptText = tpl.type === 'company'
-      ? '<span class="badge" style="background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;">全公司</span>'
-      : (tpl.departments || []).map(d => `<span class="tag-dept">${d}</span>`).join(' ');
-
-    const dbTags = (tpl.databases || []).map(db => `<span class="tag-db">${db}</span>`).join(' ');
-
+    // Basic Info status tag text
     const statusMap = {
-      'In Review': '<span class="ant-tag ant-tag-processing">審核中</span>',
-      'Approved': '<span class="ant-tag ant-tag-success">已核准</span>',
-      'Draft': '<span class="ant-tag ant-tag-default">草稿</span>'
+      'In Review': '<span style="font-size:12px;color:#d97706;font-weight:500;">審核中</span>',
+      'Approved': '<span style="font-size:12px;color:#059669;font-weight:500;">已核准</span>',
+      'Draft': '<span style="font-size:12px;color:#64748b;font-weight:500;">草稿</span>'
     };
-    const statusTag = statusMap[tpl.reviewStatus] || statusMap['Draft'];
+    const statusText = statusMap[tpl.reviewStatus] || statusMap['Draft'];
 
-    // Card B: Columns / PII
+    const deptText = tpl.type === 'company'
+      ? '<span style="color:#475569;">全公司</span>'
+      : (tpl.departments || []).join('、 ') || '-';
+
+    const dbText = (tpl.databases || []).join(', ') || '-';
+
+    // Columns / PII
     const columns = tpl.columns || [];
     const colRows = columns.length > 0
       ? columns.map(col => `
         <tr>
-          <td><strong style="font-family:var(--font-mono);font-size:11px;">${col.name}</strong></td>
-          <td><span style="font-family:var(--font-mono);color:#595959;font-size:10px;">${col.type || '-'}</span></td>
-          <td style="color:#595959;">${col.desc || '-'}</td>
-          <td style="text-align:center;">
-            ${col.isPii ? '<span class="ant-tag ant-tag-error" style="font-size:10px;">PII</span>' : '<span style="color:#bfbfbf;font-size:10px;">-</span>'}
+          <td><span style="font-family:var(--font-mono);font-weight:600;font-size:12px;color:#1e293b;">${col.name}</span></td>
+          <td><span style="font-family:var(--font-mono);color:#64748b;font-size:11px;">${col.type || '-'}</span></td>
+          <td style="color:#475569;">${col.desc || '-'}</td>
+          <td style="text-align:right;">
+            ${col.isPii ? '<span style="color:#dc2626;font-weight:600;font-size:11px;">PII</span>' : '<span style="color:#cbd5e1;">-</span>'}
           </td>
         </tr>`).join('')
-      : `<tr><td colspan="4" style="text-align:center;color:#bfbfbf;padding:10px;">AI 尚未解析欄位資訊</td></tr>`;
+      : `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:12px;">無欄位定義</td></tr>`;
 
-    // Card C: Parameters
+    // Parameters
     const params = tpl.parameters || [];
     const paramItems = params.length > 0
       ? params.map(p => `
         <div class="review-param-item">
           <span class="review-param-name">{{${p.name}}}</span>
-          <span class="ant-tag ant-tag-default" style="font-size:10px;">${p.type || 'String'}</span>
-          <span style="color:#8c8c8c;font-size:11px;flex:1;">預設: ${p.defaultVal || '-'}</span>
-          ${p.required ? '<span class="ant-tag ant-tag-error" style="font-size:10px;">必填</span>' : ''}
+          <span style="color:#64748b;font-size:11px;">${p.type || 'String'}</span>
+          <span style="color:#94a3b8;font-size:11px;flex:1;">預設: ${p.defaultVal || '-'}</span>
+          ${p.required ? '<span style="color:#dc2626;font-size:11px;font-weight:500;">必填</span>' : ''}
         </div>`).join('')
-      : '<div style="color:#bfbfbf;font-size:12px;padding:4px 0;">無動態參數</div>';
+      : '<div style="color:#94a3b8;font-size:12px;">無動態參數</div>';
 
     return `
-      <!-- Card A: Basic Info -->
-      <div class="review-info-card">
-        <div class="review-info-card-header">
-          <span>卡片 A｜基本資訊</span>
-          ${statusTag}
+      <!-- Section 1: Basic Info -->
+      <div class="review-info-section">
+        <div class="review-section-heading">
+          <h3>基本資訊</h3>
+          ${statusText}
         </div>
-        <div class="review-info-card-body">
+        <div class="review-meta-grid">
           <div class="review-meta-row">
-            <span class="review-meta-label">Template ID</span>
-            <span class="review-meta-value" style="font-family:var(--font-mono);font-weight:600;color:var(--primary);">${tpl.id}</span>
+            <span class="review-meta-label">ID</span>
+            <span class="review-meta-value" style="font-family:var(--font-mono);font-weight:600;color:#0f172a;">${tpl.id}</span>
           </div>
           <div class="review-meta-row">
             <span class="review-meta-label">名稱</span>
-            <span class="review-meta-value">${tpl.name}</span>
+            <span class="review-meta-value" style="font-weight:500;">${tpl.name}</span>
           </div>
           <div class="review-meta-row">
-            <span class="review-meta-label">適用類型</span>
+            <span class="review-meta-label">適用範圍</span>
             <span class="review-meta-value">${deptText}</span>
           </div>
           <div class="review-meta-row">
-            <span class="review-meta-label">綁定 DB</span>
-            <span class="review-meta-value">${dbTags || '-'}</span>
+            <span class="review-meta-label">資料庫</span>
+            <span class="review-meta-value" style="font-family:var(--font-mono);">${dbText}</span>
           </div>
           <div class="review-meta-row">
             <span class="review-meta-label">建立者</span>
             <span class="review-meta-value">${tpl.author || '-'}</span>
           </div>
           <div class="review-meta-row">
-            <span class="review-meta-label">業務描述</span>
-            <span class="review-meta-value" style="color:#595959;line-height:1.5;">${tpl.description || '無描述'}</span>
+            <span class="review-meta-label">說明</span>
+            <span class="review-meta-value" style="color:#475569;line-height:1.5;">${tpl.description || '無描述'}</span>
           </div>
         </div>
       </div>
 
-      <!-- Card B: Columns & PII -->
-      <div class="review-info-card">
-        <div class="review-info-card-header">
-          <span>卡片 B｜輸出欄位與 PII</span>
-          <span id="review-pii-count-badge" class="ant-tag ant-tag-default">-</span>
+      <!-- Section 2: Columns & PII -->
+      <div class="review-info-section">
+        <div class="review-section-heading">
+          <h3>輸出欄位與敏感資訊</h3>
+          <span id="review-pii-count-badge" style="font-size:12px;color:#64748b;">-</span>
         </div>
-        <div class="review-info-card-body" style="padding: 0;">
-          <table class="review-col-table">
-            <thead>
-              <tr>
-                <th>欄位名稱</th>
-                <th>型態</th>
-                <th>說明</th>
-                <th style="text-align:center;">敏感</th>
-              </tr>
-            </thead>
-            <tbody>${colRows}</tbody>
-          </table>
-        </div>
+        <table class="review-col-table">
+          <thead>
+            <tr>
+              <th>欄位</th>
+              <th>型態</th>
+              <th>說明</th>
+              <th style="text-align:right;">敏感</th>
+            </tr>
+          </thead>
+          <tbody>${colRows}</tbody>
+        </table>
       </div>
 
-      <!-- Card C: Parameters -->
-      <div class="review-info-card">
-        <div class="review-info-card-header">
-          <span>卡片 C｜動態參數 (Parameters)</span>
-          <span class="ant-tag ant-tag-default" style="font-size:10px;">${params.length} 個</span>
+      <!-- Section 3: Parameters -->
+      <div class="review-info-section">
+        <div class="review-section-heading">
+          <h3>動態參數</h3>
+          <span style="font-size:12px;color:#94a3b8;">${params.length} 個</span>
         </div>
-        <div class="review-info-card-body">
+        <div class="review-param-list">
           ${paramItems}
         </div>
       </div>
 
-      <!-- Card E: Execution Proofs (read-only, populated dynamically) -->
-      <div class="review-info-card">
-        <div class="review-info-card-header">
-          <span>卡片 E｜執行憑證附件</span>
+      <!-- Section 4: Proofs -->
+      <div class="review-info-section">
+        <div class="review-section-heading">
+          <h3>執行憑證附件</h3>
         </div>
-        <div class="review-info-card-body" id="review-modal-proof-container">
+        <div id="review-modal-proof-container">
           <!-- populated by updateReadOnlyInfoPane -->
         </div>
       </div>
 
-      <!-- Audit Timeline -->
-      <div class="review-info-card">
-        <div class="review-info-card-header">
-          <span>審核歷程紀錄 (Audit Timeline)</span>
+      <!-- Section 5: Timeline -->
+      <div class="review-info-section">
+        <div class="review-section-heading">
+          <h3>審核歷程</h3>
         </div>
-        <div class="review-info-card-body" style="padding: 8px 12px;">
-          <div class="timeline" id="review-modal-audit-timeline"></div>
-        </div>
+        <div class="timeline" id="review-modal-audit-timeline"></div>
       </div>
     `;
+
   }
 
   /**
@@ -744,16 +746,18 @@ export class ReviewView {
     const tpl = store.getById(id);
     if (!tpl) return;
 
-    // PII badge in Card B header
+    // PII status text
     const piiBadge = document.getElementById('review-pii-count-badge');
     if (piiBadge) {
       const piiCount = (tpl.piiFields || []).length;
       if (piiCount > 0) {
-        piiBadge.className = 'ant-tag ant-tag-error';
-        piiBadge.textContent = `${piiCount} 個 PII`;
+        piiBadge.style.color = '#dc2626';
+        piiBadge.style.fontWeight = '500';
+        piiBadge.textContent = `包含 ${piiCount} 個敏感欄位`;
       } else {
-        piiBadge.className = 'ant-tag ant-tag-success';
-        piiBadge.textContent = '無 PII';
+        piiBadge.style.color = '#059669';
+        piiBadge.style.fontWeight = '400';
+        piiBadge.textContent = '無敏感欄位';
       }
     }
 

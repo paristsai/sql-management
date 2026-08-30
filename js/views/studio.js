@@ -151,7 +151,7 @@ export class StudioView {
             <!-- Card A: Basic Info -->
             <div class="card">
               <div class="card-header">
-                <div class="card-title">卡片 A｜基本資訊</div>
+                <div class="card-title">基本資訊</div>
               </div>
               <div class="card-body">
                 <div class="form-group">
@@ -209,7 +209,7 @@ export class StudioView {
             <div class="card ai-badge-header">
               <div class="card-header">
                 <div class="card-title" style="color: var(--purple-ai-text);">
-                  卡片 B｜AI 輔助解析與描述
+                  AI 輔助解析與描述
                 </div>
                 <button class="btn btn-ai btn-xs" id="btn-ai-analyze">
                   AI 重新解析與生成
@@ -250,7 +250,7 @@ export class StudioView {
             <!-- Card C: Parameter Management -->
             <div class="card">
               <div class="card-header">
-                <div class="card-title">卡片 C｜動態參數管理 (Parameters)</div>
+                <div class="card-title">動態參數管理 (Parameters)</div>
                 <button class="btn btn-outline btn-xs" id="btn-add-param">+ 新增參數</button>
               </div>
               <div class="card-body">
@@ -266,7 +266,7 @@ export class StudioView {
             <!-- Card D: Downstream Impact Analysis -->
             <div class="card" id="card-impact-analysis" style="display: none;">
               <div class="card-header">
-                <div class="card-title">卡片 D｜下游衝擊分析 (Impact Assessment)</div>
+                <div class="card-title">下游衝擊分析 (Impact Assessment)</div>
               </div>
               <div class="card-body">
                 <div class="impact-alert-box">
@@ -298,7 +298,7 @@ export class StudioView {
             <!-- Card E: Attachments & Proof -->
             <div class="card">
               <div class="card-header">
-                <div class="card-title">卡片 E｜執行憑證與附件</div>
+                <div class="card-title">執行憑證與附件</div>
                 <span class="badge badge-review" style="font-size: 10px;">需含執行成功截圖</span>
               </div>
               <div class="card-body">
