@@ -204,8 +204,8 @@ export class StudioView {
                 </div>
 
                 <div id="test-result-output" style="margin-top: 10px;">
-                  <div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px;">
-                    點擊「執行測試」檢驗 SQL 在目標資料庫之執行計畫與回傳結果
+                  <div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 16px;">
+                    點擊「執行測試」檢驗 SQL 語法與目標資料庫連線編譯狀態
                   </div>
                 </div>
               </div>
@@ -1378,45 +1378,17 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
     resultOutput.innerHTML = `<div style="text-align:center; padding:16px; color:var(--primary); font-size:12px;">⚡ 查詢編譯與執行中...</div>`;
 
     setTimeout(() => {
-      statusText.innerHTML = `✅ 執行成功 (耗時 <strong>18.2ms</strong>, 回傳 <strong>3</strong> 筆資料)`;
+      statusText.innerHTML = `✅ 語法檢查與編譯通過 (耗時 <strong>18.2ms</strong>)`;
       resultOutput.innerHTML = `
-        <div style="margin-bottom: 8px; font-size: 11px; color: var(--success-text); background: var(--success-light); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--success-border);">
-          ✓ SQL 語法解析通過，目標資料庫 [${targetDb}] 回傳執行成功
+        <div style="font-size: 12px; color: #065f46; background: #ecfdf5; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>SQL 語法解析通過，目標資料庫 <strong>[${targetDb}]</strong> 連線與編譯成功 (耗時 18.2ms)</span>
+          </div>
+          <span style="font-size: 11px; color: #047857; font-weight: 600; background: #d1fae5; padding: 2px 8px; border-radius: 4px;">合格</span>
         </div>
-        <table class="result-table">
-          <thead>
-            <tr>
-              <th>user_id</th>
-              <th>phone_number</th>
-              <th>register_date</th>
-              <th>total_orders</th>
-              <th>total_revenue</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>U-108291</td>
-              <td>0912***882</td>
-              <td>2026-08-02</td>
-              <td>8</td>
-              <td>$4,520.00</td>
-            </tr>
-            <tr>
-              <td>U-108295</td>
-              <td>0933***109</td>
-              <td>2026-08-03</td>
-              <td>12</td>
-              <td>$8,990.00</td>
-            </tr>
-            <tr>
-              <td>U-108304</td>
-              <td>0988***443</td>
-              <td>2026-08-05</td>
-              <td>3</td>
-              <td>$1,200.00</td>
-            </tr>
-          </tbody>
-        </table>
       `;
 
       // If user doesn't have an attachment yet, auto attach an execution proof
