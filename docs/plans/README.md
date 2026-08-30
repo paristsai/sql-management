@@ -16,3 +16,4 @@
 | [Plan 0006](0006-monaco-editor-syntax-highlight-decorations-and-toggles.md) | Monaco Editor 跨視圖語法高亮裝飾器與動態標記切換實作計畫 | [ADR 0006](../adr/0006-monaco-editor-syntax-highlight-decorations-and-toggle-architecture.md) | `2b4efbb` | Completed |
 | [Plan 0007](0007-batch-import-export-and-multi-mode-preview-workbench.md) | 匯入預覽三模式架構與批次處理實作計畫 | [ADR 0007](../adr/0007-sql-template-batch-import-export-and-multi-mode-preview.md) | `28da12a` | Completed |
 | [Plan 0008](0008-permission-governance-duplicate-and-deletion-audit-workflow.md) | 權限機制、樣板複製與刪除審核流程實作計畫 | [ADR 0008](../adr/0008-permission-governance-duplicate-and-deletion-audit-workflow.md) | - | Completed |
+| [Plan 0009](0009-backend-systems-and-api-inventory.md) | 後端系統架構與完整 API 盤點清單 (Java + Python + Data API) | - | - | Planned |
