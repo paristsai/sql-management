@@ -82,10 +82,11 @@ export class CatalogView {
             <div style="min-width: 120px;">
               <select class="form-select" id="filter-db">
                 <option value="all">所有資料庫</option>
-                <option value="DBName2">DBName2</option>
                 <option value="DBName1">DBName1</option>
-                <option value="DBName5">DBName5</option>
+                <option value="DBName2">DBName2</option>
                 <option value="DBName3">DBName3</option>
+                <option value="DBName3">DBName4</option>
+                <option value="DBName5">DBName5</option>
               </select>
             </div>
 
