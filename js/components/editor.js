@@ -339,4 +339,62 @@ export class SqlDiffViewer {
       modified: modifiedModel
     });
   }
+
+  layout() {
+    this.diffEditor?.layout?.();
+  }
+
+  dispose() {
+    this.diffEditor?.dispose?.();
+    this.diffEditor = null;
+  }
+}
+
+/**
+ * Read-only single Monaco editor for Review Modal SQL tabs
+ */
+export class SqlReadOnlyEditor {
+  constructor(containerElement) {
+    this.container = containerElement;
+    this.editor = null;
+  }
+
+  async init(value = '') {
+    const monaco = await loadMonaco();
+
+    this.editor = monaco.editor.create(this.container, {
+      value: value,
+      language: 'sql',
+      theme: 'vs',
+      fontSize: 13,
+      fontFamily: "'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace",
+      readOnly: true,
+      automaticLayout: true,
+      lineNumbers: 'on',
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      wordWrap: 'on',
+      padding: { top: 12, bottom: 12 },
+      renderLineHighlight: 'none',
+      selectionHighlight: false,
+      occurrencesHighlight: false,
+    });
+
+    return this.editor;
+  }
+
+  setValue(val) {
+    if (this.editor) {
+      this.editor.setValue(val || '');
+    }
+  }
+
+  layout() {
+    this.editor?.layout?.();
+  }
+
+  dispose() {
+    this.editor?.dispose?.();
+    this.editor = null;
+  }
 }

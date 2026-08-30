@@ -5,7 +5,7 @@
 
 import { store } from '../store.js';
 import { toast } from '../components/toast.js';
-import { SqlDiffViewer } from '../components/editor.js';
+import { SqlDiffViewer, SqlReadOnlyEditor } from '../components/editor.js';
 import { ModalManager } from '../components/modal.js';
 
 export class ReviewView {
@@ -14,6 +14,9 @@ export class ReviewView {
     this.activeTab = 'assigned'; // 'assigned' | 'my' | 'all'
     this.modalTemplateId = null;
     this.modalDiffViewer = null;
+    this.modalReadOnlyEditor = null;
+    this.modalActiveTab = 'raw'; // 'raw' | 'template'
+    this.modalDiffEnabled = false;
     this.filterKeyword = '';
     this.filterStatus = 'all';
   }
@@ -27,7 +30,8 @@ export class ReviewView {
       this.updateTabBadges();
       this.renderTable();
       if (this.modalTemplateId) {
-        this.updateModalContent(this.modalTemplateId);
+        this.updateReadOnlyInfoPane(this.modalTemplateId);
+        this.renderModalSteps(store.getById(this.modalTemplateId));
       }
     });
 
@@ -327,13 +331,20 @@ export class ReviewView {
     if (!tpl) return;
 
     this.modalTemplateId = id;
+    this.modalActiveTab = 'raw';
+    this.modalDiffEnabled = false;
+
+    // Dispose existing editors
+    this.modalDiffViewer?.dispose?.();
+    this.modalReadOnlyEditor?.dispose?.();
+    this.modalDiffViewer = null;
+    this.modalReadOnlyEditor = null;
+
     const overlay = document.getElementById('review-modal-overlay');
     const modalBody = document.getElementById('modal-review-body');
     const titleEl = document.getElementById('modal-review-title');
     const typeBadge = document.getElementById('modal-review-type-badge');
     const statusBadge = document.getElementById('modal-review-status-badge');
-    const authorEl = document.getElementById('modal-review-author');
-    const assigneeEl = document.getElementById('modal-review-assignee');
 
     if (!overlay || !modalBody) return;
 
@@ -351,99 +362,105 @@ export class ReviewView {
       statusBadge.textContent = '草稿 / 退回 (Draft)';
     }
 
-    if (authorEl) authorEl.textContent = tpl.author || 'Alex Chen';
-    if (assigneeEl) assigneeEl.textContent = tpl.assignee || 'John Doe (Data Architect)';
+    // Check if diff is available (needs at least 1 previous version)
+    const hasPreviousVersion = store.getPreviousVersion(id) !== null;
 
-    // Inject 2-Pane Body
+    // Build fullscreen body: [sql-pane] | [splitter] | [info-pane]
     modalBody.innerHTML = `
-      <!-- Left Pane: Code Diff (62%) -->
-      <div class="modal-diff-pane">
-        <div class="modal-diff-toolbar">
-          <div>
-            <span>Raw SQL</span>
-            <span style="margin: 0 10px; color: #cbd5e1;">|</span>
-            <span>SQL Template</span>
+      <!-- Left SQL Pane -->
+      <div class="review-sql-pane" id="review-sql-pane" style="width: 50%;">
+        <div class="review-sql-toolbar">
+          <div class="review-sql-tabs">
+            <button class="review-sql-tab active" id="review-tab-raw" data-tab="raw">Raw SQL</button>
+            <button class="review-sql-tab" id="review-tab-template" data-tab="template">SQL Template</button>
           </div>
-          <div style="display: flex; gap: 10px; font-size: 11px;">
-            <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:10px;height:10px;background:#fecaca;border-radius:2px;"></span> 刪除</span>
-            <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:10px;height:10px;background:#bbf7d0;border-radius:2px;"></span> 新增</span>
-            <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:10px;height:10px;background:#fef08a;border-radius:2px;"></span> 參數</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="review-sql-tab-diff-legend" id="review-diff-legend" style="display:none;">
+              <span class="review-diff-legend-item">
+                <span class="review-diff-legend-dot" style="background:#fecaca;"></span>刪除
+              </span>
+              <span class="review-diff-legend-item">
+                <span class="review-diff-legend-dot" style="background:#bbf7d0;"></span>新增
+              </span>
+            </div>
+            <button class="review-diff-toggle-btn ${hasPreviousVersion ? '' : 'disabled'}" id="review-btn-diff-toggle"
+              ${hasPreviousVersion ? '' : 'disabled'}
+              title="${hasPreviousVersion ? '切換版本差異對照' : '無歷史版本可比對'}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+              </svg>
+              版本差異
+            </button>
           </div>
         </div>
-        <div id="modal-monaco-diff-container" class="modal-diff-container"></div>
+        <div class="review-editor-area" id="review-editor-area"></div>
       </div>
 
-      <!-- Right Pane: Governance, Proof & Timeline (38%) -->
-      <div class="modal-info-pane">
-        <!-- 1. Description & Meta -->
-        <div class="review-section-card">
-          <div class="review-section-header">
-            <span>樣板說明與規格</span>
-            <span class="text-xs text-secondary">${tpl.databases ? tpl.databases.join(', ') : ''}</span>
-          </div>
-          <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
-            ${tpl.description || '無描述說明'}
-          </div>
-        </div>
+      <!-- Splitter -->
+      <div class="review-splitter" id="review-splitter"></div>
 
-        <!-- 2. Security & PII Detection -->
-        <div class="review-section-card" id="modal-sec-card">
-          <div class="review-section-header">
-            <span>敏感欄位偵測 (PII Inspection)</span>
-            <span id="modal-pii-count-tag" class="ant-tag ant-tag-error">0 個 PII</span>
-          </div>
-          <div id="modal-pii-list" style="margin-top: 4px; display:flex; flex-wrap:wrap; gap:6px;">
-            <!-- PII list -->
-          </div>
-        </div>
-
-        <!-- 3. Execution Proof Screenshot -->
-        <div class="review-section-card">
-          <div class="review-section-header">
-            <span>執行憑證截圖 (Proof of Execution)</span>
-          </div>
-          <div id="modal-proof-container">
-            <!-- Proofs -->
-          </div>
-        </div>
-
-        <!-- 4. Audit History Timeline -->
-        <div class="review-section-card">
-          <div class="review-section-header">
-            <span>審核歷程紀錄 (Audit Timeline)</span>
-          </div>
-          <div class="timeline" id="modal-audit-timeline" style="margin-top: 6px;">
-            <!-- History items -->
-          </div>
-        </div>
+      <!-- Right Info Pane -->
+      <div class="review-info-pane" id="review-info-pane" style="flex: 1; min-width: 0;">
+        ${this.buildReadOnlyInfoPaneHTML(tpl)}
       </div>
     `;
 
-    // Render Steps Component in Modal Footer
-    this.renderModalSteps(tpl);
+    // Init editor (default: raw SQL, diff off)
+    await this._renderSqlEditor(tpl);
 
-    // Render Diff Editor
-    const diffContainer = modalBody.querySelector('#modal-monaco-diff-container');
-    if (diffContainer) {
-      diffContainer.innerHTML = '';
-      this.modalDiffViewer = new SqlDiffViewer(diffContainer);
-      await this.modalDiffViewer.init(tpl.rawSql || tpl.templateSql || '', tpl.templateSql || '');
+    // Bind SQL tab events
+    const tabRaw = modalBody.querySelector('#review-tab-raw');
+    const tabTemplate = modalBody.querySelector('#review-tab-template');
+    const btnDiffToggle = modalBody.querySelector('#review-btn-diff-toggle');
+
+    tabRaw.addEventListener('click', () => {
+      this.modalActiveTab = 'raw';
+      this._renderSqlEditor(tpl);
+    });
+    tabTemplate.addEventListener('click', () => {
+      this.modalActiveTab = 'template';
+      this._renderSqlEditor(tpl);
+    });
+    if (hasPreviousVersion) {
+      btnDiffToggle.addEventListener('click', () => {
+        this.modalDiffEnabled = !this.modalDiffEnabled;
+        this._renderSqlEditor(tpl);
+      });
     }
 
-    // Populate Right Pane Details
-    this.updateModalContent(id);
+    // Init splitter drag
+    this.initSplitter();
 
-    // Button state in Modal Footer
+    // Populate dynamic right-pane content (proofs, timeline)
+    this.updateReadOnlyInfoPane(id);
+
+    // Render footer steps
+    this.renderModalSteps(tpl);
+
+    // Footer button bindings
     const rejectBtn = document.getElementById('btn-modal-review-reject');
     const approveBtn = document.getElementById('btn-modal-review-approve');
     const editBtn = document.getElementById('btn-modal-review-edit');
+
+    this.closeReviewModal = () => {
+      this.modalTemplateId = null;
+      this.modalDiffViewer?.dispose?.();
+      this.modalReadOnlyEditor?.dispose?.();
+      this.modalDiffViewer = null;
+      this.modalReadOnlyEditor = null;
+      overlay.classList.remove('active');
+    };
+
+    // Close button bindings
+    document.getElementById('btn-close-review-modal')?.addEventListener('click', this.closeReviewModal);
+    document.getElementById('btn-modal-review-close')?.addEventListener('click', this.closeReviewModal);
 
     if (rejectBtn) {
       rejectBtn.onclick = () => {
         ModalManager.showRejectModal((reason) => {
           store.rejectTemplate(id, reason);
           toast.warning(`Template [${id}] 已退回修正！`);
-          overlay.classList.remove('active');
+          this.closeReviewModal();
         });
       };
     }
@@ -457,9 +474,11 @@ export class ReviewView {
         approveBtn.innerHTML = '✓ 核准發布 (Approve)';
         approveBtn.onclick = () => {
           if (confirm(`確定核准 Template [${id}]？\n核准後狀態將變更為「可使用 (Active)」。`)) {
-            store.approveTemplate(id);
-            toast.success(`Template [${id}] 審核通過，正式發布上線！`);
-            overlay.classList.remove('active');
+            const ok = store.approveTemplate(id);
+            if (ok) {
+              toast.success(`Template [${id}] 審核通過，正式發布上線！`);
+              this.closeReviewModal();
+            }
           }
         };
       }
@@ -467,7 +486,7 @@ export class ReviewView {
 
     if (editBtn) {
       editBtn.onclick = () => {
-        overlay.classList.remove('active');
+        this.closeReviewModal();
         window.AppRouter.navigate('studio', { mode: 'edit', id });
       };
     }
@@ -475,7 +494,324 @@ export class ReviewView {
     overlay.classList.add('active');
   }
 
+  /**
+   * Render the SQL editor based on current activeTab and diffEnabled state.
+   * - activeTab: 'raw' | 'template' — determines which SQL form to display
+   * - diffEnabled: boolean — if true, shows diff between current and previous version (same form)
+   */
+  async _renderSqlEditor(tpl) {
+    const editorArea = document.getElementById('review-editor-area');
+    if (!editorArea) return;
+
+    // Dispose old editors
+    this.modalDiffViewer?.dispose?.();
+    this.modalReadOnlyEditor?.dispose?.();
+    this.modalDiffViewer = null;
+    this.modalReadOnlyEditor = null;
+    editorArea.innerHTML = '';
+
+    // Update toolbar UI
+    const tabRaw = document.getElementById('review-tab-raw');
+    const tabTemplate = document.getElementById('review-tab-template');
+    const btnDiffToggle = document.getElementById('review-btn-diff-toggle');
+    const diffLegend = document.getElementById('review-diff-legend');
+
+    if (tabRaw) tabRaw.classList.toggle('active', this.modalActiveTab === 'raw');
+    if (tabTemplate) tabTemplate.classList.toggle('active', this.modalActiveTab === 'template');
+
+    // Toggle button active state
+    if (btnDiffToggle) {
+      btnDiffToggle.classList.toggle('active', this.modalDiffEnabled);
+    }
+
+    // Determine current SQL content
+    const currentSql = this.modalActiveTab === 'raw'
+      ? (tpl.rawSql || tpl.templateSql || '')
+      : (tpl.templateSql || tpl.rawSql || '');
+
+    if (this.modalDiffEnabled) {
+      // Diff mode: compare previous version vs current (same SQL form)
+      const prevVersion = store.getPreviousVersion(tpl.id);
+      if (!prevVersion) {
+        // Shouldn't happen (button should be disabled), but handle gracefully
+        this.modalDiffEnabled = false;
+        return this._renderSqlEditor(tpl);
+      }
+
+      const previousSql = this.modalActiveTab === 'raw'
+        ? (prevVersion.rawSql || '')
+        : (prevVersion.templateSql || '');
+
+      if (diffLegend) diffLegend.style.display = 'flex';
+
+      this.modalDiffViewer = new SqlDiffViewer(editorArea);
+      await this.modalDiffViewer.init(previousSql, currentSql);
+    } else {
+      // Single read-only editor
+      if (diffLegend) diffLegend.style.display = 'none';
+
+      this.modalReadOnlyEditor = new SqlReadOnlyEditor(editorArea);
+      await this.modalReadOnlyEditor.init(currentSql);
+    }
+  }
+
+  /**
+   * Init resizable splitter between SQL pane and info pane
+   */
+  initSplitter() {
+    const splitter = document.getElementById('review-splitter');
+    const sqlPane = document.getElementById('review-sql-pane');
+    const infoPane = document.getElementById('review-info-pane');
+    if (!splitter || !sqlPane || !infoPane) return;
+
+    const container = splitter.parentElement;
+    let dragging = false;
+
+    splitter.addEventListener('mousedown', (e) => {
+      dragging = true;
+      splitter.classList.add('dragging');
+      e.preventDefault();
+    });
+
+    const onMouseMove = (e) => {
+      if (!dragging) return;
+      const rect = container.getBoundingClientRect();
+      const leftW = e.clientX - rect.left;
+      const totalW = rect.width - splitter.offsetWidth;
+      const pct = Math.max(20, Math.min(80, (leftW / totalW) * 100));
+      sqlPane.style.width = `${pct}%`;
+      infoPane.style.width = `${100 - pct}%`;
+      infoPane.style.flex = 'none';
+      // Trigger Monaco layout
+      this.modalDiffViewer?.layout?.();
+      this.modalReadOnlyEditor?.layout?.();
+    };
+
+    const onMouseUp = () => {
+      if (dragging) {
+        dragging = false;
+        splitter.classList.remove('dragging');
+      }
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    // Store cleanup for next modal open
+    this._splitterCleanup = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }
+
+  /**
+   * Build static HTML for the right info pane (cards A, B, C, E + Timeline stubs)
+   */
+  buildReadOnlyInfoPaneHTML(tpl) {
+    // Card A: Basic Info
+    const deptText = tpl.type === 'company'
+      ? '<span class="badge" style="background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;">全公司</span>'
+      : (tpl.departments || []).map(d => `<span class="tag-dept">${d}</span>`).join(' ');
+
+    const dbTags = (tpl.databases || []).map(db => `<span class="tag-db">${db}</span>`).join(' ');
+
+    const statusMap = {
+      'In Review': '<span class="ant-tag ant-tag-processing">審核中</span>',
+      'Approved': '<span class="ant-tag ant-tag-success">已核准</span>',
+      'Draft': '<span class="ant-tag ant-tag-default">草稿</span>'
+    };
+    const statusTag = statusMap[tpl.reviewStatus] || statusMap['Draft'];
+
+    // Card B: Columns / PII
+    const columns = tpl.columns || [];
+    const colRows = columns.length > 0
+      ? columns.map(col => `
+        <tr>
+          <td><strong style="font-family:var(--font-mono);font-size:11px;">${col.name}</strong></td>
+          <td><span style="font-family:var(--font-mono);color:#595959;font-size:10px;">${col.type || '-'}</span></td>
+          <td style="color:#595959;">${col.desc || '-'}</td>
+          <td style="text-align:center;">
+            ${col.isPii ? '<span class="ant-tag ant-tag-error" style="font-size:10px;">PII</span>' : '<span style="color:#bfbfbf;font-size:10px;">-</span>'}
+          </td>
+        </tr>`).join('')
+      : `<tr><td colspan="4" style="text-align:center;color:#bfbfbf;padding:10px;">AI 尚未解析欄位資訊</td></tr>`;
+
+    // Card C: Parameters
+    const params = tpl.parameters || [];
+    const paramItems = params.length > 0
+      ? params.map(p => `
+        <div class="review-param-item">
+          <span class="review-param-name">{{${p.name}}}</span>
+          <span class="ant-tag ant-tag-default" style="font-size:10px;">${p.type || 'String'}</span>
+          <span style="color:#8c8c8c;font-size:11px;flex:1;">預設: ${p.defaultVal || '-'}</span>
+          ${p.required ? '<span class="ant-tag ant-tag-error" style="font-size:10px;">必填</span>' : ''}
+        </div>`).join('')
+      : '<div style="color:#bfbfbf;font-size:12px;padding:4px 0;">無動態參數</div>';
+
+    return `
+      <!-- Card A: Basic Info -->
+      <div class="review-info-card">
+        <div class="review-info-card-header">
+          <span>卡片 A｜基本資訊</span>
+          ${statusTag}
+        </div>
+        <div class="review-info-card-body">
+          <div class="review-meta-row">
+            <span class="review-meta-label">Template ID</span>
+            <span class="review-meta-value" style="font-family:var(--font-mono);font-weight:600;color:var(--primary);">${tpl.id}</span>
+          </div>
+          <div class="review-meta-row">
+            <span class="review-meta-label">名稱</span>
+            <span class="review-meta-value">${tpl.name}</span>
+          </div>
+          <div class="review-meta-row">
+            <span class="review-meta-label">適用類型</span>
+            <span class="review-meta-value">${deptText}</span>
+          </div>
+          <div class="review-meta-row">
+            <span class="review-meta-label">綁定 DB</span>
+            <span class="review-meta-value">${dbTags || '-'}</span>
+          </div>
+          <div class="review-meta-row">
+            <span class="review-meta-label">建立者</span>
+            <span class="review-meta-value">${tpl.author || '-'}</span>
+          </div>
+          <div class="review-meta-row">
+            <span class="review-meta-label">業務描述</span>
+            <span class="review-meta-value" style="color:#595959;line-height:1.5;">${tpl.description || '無描述'}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card B: Columns & PII -->
+      <div class="review-info-card">
+        <div class="review-info-card-header">
+          <span>卡片 B｜輸出欄位與 PII</span>
+          <span id="review-pii-count-badge" class="ant-tag ant-tag-default">-</span>
+        </div>
+        <div class="review-info-card-body" style="padding: 0;">
+          <table class="review-col-table">
+            <thead>
+              <tr>
+                <th>欄位名稱</th>
+                <th>型態</th>
+                <th>說明</th>
+                <th style="text-align:center;">敏感</th>
+              </tr>
+            </thead>
+            <tbody>${colRows}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card C: Parameters -->
+      <div class="review-info-card">
+        <div class="review-info-card-header">
+          <span>卡片 C｜動態參數 (Parameters)</span>
+          <span class="ant-tag ant-tag-default" style="font-size:10px;">${params.length} 個</span>
+        </div>
+        <div class="review-info-card-body">
+          ${paramItems}
+        </div>
+      </div>
+
+      <!-- Card E: Execution Proofs (read-only, populated dynamically) -->
+      <div class="review-info-card">
+        <div class="review-info-card-header">
+          <span>卡片 E｜執行憑證附件</span>
+        </div>
+        <div class="review-info-card-body" id="review-modal-proof-container">
+          <!-- populated by updateReadOnlyInfoPane -->
+        </div>
+      </div>
+
+      <!-- Audit Timeline -->
+      <div class="review-info-card">
+        <div class="review-info-card-header">
+          <span>審核歷程紀錄 (Audit Timeline)</span>
+        </div>
+        <div class="review-info-card-body" style="padding: 8px 12px;">
+          <div class="timeline" id="review-modal-audit-timeline"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Populate dynamic content in right pane (proofs, timeline, PII badge)
+   */
+  updateReadOnlyInfoPane(id) {
+    const tpl = store.getById(id);
+    if (!tpl) return;
+
+    // PII badge in Card B header
+    const piiBadge = document.getElementById('review-pii-count-badge');
+    if (piiBadge) {
+      const piiCount = (tpl.piiFields || []).length;
+      if (piiCount > 0) {
+        piiBadge.className = 'ant-tag ant-tag-error';
+        piiBadge.textContent = `${piiCount} 個 PII`;
+      } else {
+        piiBadge.className = 'ant-tag ant-tag-success';
+        piiBadge.textContent = '無 PII';
+      }
+    }
+
+    // Card E: Proofs
+    const proofContainer = document.getElementById('review-modal-proof-container');
+    if (proofContainer) {
+      proofContainer.innerHTML = '';
+      const attachments = tpl.attachments || [];
+      if (attachments.length > 0) {
+        attachments.forEach(att => {
+          const wrap = document.createElement('div');
+          wrap.style.marginBottom = '8px';
+
+          const img = document.createElement('img');
+          img.className = 'proof-img-thumb';
+          img.src = att.url;
+          img.alt = att.name;
+          img.title = '點擊放大';
+          img.onclick = () => ModalManager.showLightbox(att.url, `執行憑證: ${att.name}`);
+
+          const caption = document.createElement('div');
+          caption.style.cssText = 'margin-top:4px;display:flex;justify-content:space-between;font-size:11px;color:#8c8c8c;';
+          caption.innerHTML = `<span><strong>${att.name}</strong></span><span>${att.size}</span>`;
+
+          wrap.appendChild(img);
+          wrap.appendChild(caption);
+          proofContainer.appendChild(wrap);
+        });
+      } else {
+        proofContainer.innerHTML = '<span style="font-size:12px;color:#dc2626;">⚠ 建立者未上傳執行憑證截圖</span>';
+      }
+    }
+
+    // Timeline
+    const timeline = document.getElementById('review-modal-audit-timeline');
+    if (timeline) {
+      const history = tpl.history || [];
+      if (history.length === 0) {
+        timeline.innerHTML = '<div style="color:#bfbfbf;font-size:12px;">暫無審核記錄</div>';
+        return;
+      }
+      timeline.innerHTML = history.map(h => `
+        <div class="timeline-step">
+          <div class="timeline-dot ${h.action === 'Approve' ? 'success' : (h.action === 'Reject' ? 'danger' : '')}"></div>
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-user">${h.user} <span style="font-weight:normal;color:#64748b;">(${h.action})</span></span>
+              <span class="timeline-time">${h.time}</span>
+            </div>
+            ${h.comment ? `<div class="timeline-comment">${h.comment}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
   renderModalSteps(tpl) {
+    if (!tpl) return;
     const footerLeft = document.getElementById('modal-review-footer-info');
     if (!footerLeft) return;
 

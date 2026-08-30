@@ -2,7 +2,7 @@
  * SQL Template Platform - Global Data Store & State Machine
  */
 
-const STORAGE_KEY = 'sql_template_platform_data_v1';
+const STORAGE_KEY = 'sql_template_platform_data_v2';
 
 const INITIAL_TEMPLATES = [
   {
@@ -72,8 +72,51 @@ HAVING COUNT(DISTINCT a.activity_date) >= {{min_active_days}};`,
     assignee: 'John Doe (Data Architect)',
     updatedAt: '2026-08-28 15:30:00',
     history: [
-      { action: 'Create', user: 'Alex Chen', time: '2026-08-28 14:00:00', comment: '建立初始版本' },
-      { action: 'Submit Review', user: 'Alex Chen', time: '2026-08-28 15:30:00', comment: '送出審核，指派 John Doe 審查 PII 遮蔽與執行計劃' }
+      { action: 'Create', user: 'Alex Chen', time: '2026-08-20 10:00:00', comment: '建立初始版本' },
+      { action: 'Submit Review', user: 'Alex Chen', time: '2026-08-20 11:00:00', comment: '送出審核' },
+      { action: 'Approve', user: 'John Doe', time: '2026-08-21 09:30:00', comment: '初版通過審核，准予上線' },
+      { action: 'Submit Review', user: 'Alex Chen', time: '2026-08-28 15:30:00', comment: '新增 id_card_num 欄位、調整 HAVING 門檻，重新送審' }
+    ],
+    versions: [
+      {
+        version: 1,
+        rawSql: `SELECT 
+  u.user_id,
+  u.phone_number,
+  u.register_date,
+  COUNT(DISTINCT a.activity_date) AS active_days_7d,
+  SUM(COALESCE(p.pay_amount, 0)) AS total_revenue
+FROM users u
+LEFT JOIN user_activities a 
+  ON u.user_id = a.user_id 
+  AND a.activity_date BETWEEN '2026-08-01' AND '2026-08-07'
+LEFT JOIN orders p 
+  ON u.user_id = p.user_id 
+  AND p.status = 'SUCCESS'
+WHERE u.channel_source = 'google_ad'
+  AND u.register_date >= '2026-08-01'
+GROUP BY u.user_id, u.phone_number, u.register_date
+HAVING COUNT(DISTINCT a.activity_date) >= 1;`,
+        templateSql: `SELECT 
+  u.user_id,
+  u.phone_number,
+  u.register_date,
+  COUNT(DISTINCT a.activity_date) AS active_days_7d,
+  SUM(COALESCE(p.pay_amount, 0)) AS total_revenue
+FROM users u
+LEFT JOIN user_activities a 
+  ON u.user_id = a.user_id 
+  AND a.activity_date BETWEEN {{start_date}} AND {{end_date}}
+LEFT JOIN orders p 
+  ON u.user_id = p.user_id 
+  AND p.status = 'SUCCESS'
+WHERE u.channel_source = {{channel}}
+  AND u.register_date >= {{start_date}}
+GROUP BY u.user_id, u.phone_number, u.register_date
+HAVING COUNT(DISTINCT a.activity_date) >= {{min_active_days}};`,
+        approvedAt: '2026-08-21 09:30:00',
+        approvedBy: 'John Doe (Data Architect)'
+      }
     ],
     impact: {
       affectedSystems: 4,
@@ -128,11 +171,61 @@ WHERE t.period = {{accounting_period}}
     usageStatus: 'Active',
     author: 'Emily Lin (FinTech)',
     assignee: 'John Doe (Data Architect)',
-    updatedAt: '2026-08-20 11:20:00',
+    updatedAt: '2026-08-25 14:00:00',
     history: [
-      { action: 'Create', user: 'Emily Lin', time: '2026-08-19 10:00:00', comment: '建立財務專用 SQL' },
-      { action: 'Submit Review', user: 'Emily Lin', time: '2026-08-19 16:00:00', comment: '送審' },
-      { action: 'Approve', user: 'John Doe', time: '2026-08-20 11:20:00', comment: '審核通過，准予上線' }
+      { action: 'Create', user: 'Emily Lin', time: '2026-08-10 10:00:00', comment: '建立財務專用 SQL（僅含 tx_id, account_no, amount, created_at）' },
+      { action: 'Submit Review', user: 'Emily Lin', time: '2026-08-10 14:00:00', comment: '送審' },
+      { action: 'Approve', user: 'John Doe', time: '2026-08-11 09:00:00', comment: 'v1 審核通過' },
+      { action: 'Submit Review', user: 'Emily Lin', time: '2026-08-24 16:00:00', comment: '新增 bank_code, tax_amount 欄位，送審 v2' },
+      { action: 'Approve', user: 'John Doe', time: '2026-08-25 14:00:00', comment: 'v2 審核通過，新增欄位准予上線' }
+    ],
+    versions: [
+      {
+        version: 1,
+        rawSql: `SELECT 
+  t.tx_id,
+  t.account_no,
+  t.amount,
+  t.created_at
+FROM finance_transactions t
+WHERE t.period = '202606'
+  AND t.audit_status = 'VERIFIED';`,
+        templateSql: `SELECT 
+  t.tx_id,
+  t.account_no,
+  t.amount,
+  t.created_at
+FROM finance_transactions t
+WHERE t.period = {{accounting_period}}
+  AND t.audit_status = {{audit_status}};`,
+        approvedAt: '2026-08-11 09:00:00',
+        approvedBy: 'John Doe (Data Architect)'
+      },
+      {
+        version: 2,
+        rawSql: `SELECT 
+  t.tx_id,
+  t.account_no,
+  t.bank_code,
+  t.amount,
+  t.tax_amount,
+  t.created_at
+FROM finance_transactions t
+WHERE t.period = '202607'
+  AND t.audit_status = 'VERIFIED';`,
+        templateSql: `SELECT 
+  t.tx_id,
+  t.account_no,
+  t.bank_code,
+  t.amount,
+  t.tax_amount,
+  t.created_at
+FROM finance_transactions t
+WHERE t.period = {{accounting_period}}
+  AND t.audit_status = {{audit_status}};`,
+        approvedAt: '2026-08-25 14:00:00',
+        approvedBy: 'John Doe (Data Architect)'
+      }
     ],
     impact: {
       affectedSystems: 2,
@@ -189,6 +282,7 @@ GROUP BY o.order_date, o.store_id;`,
     history: [
       { action: 'Create', user: 'John Doe', time: '2026-08-28 09:15:00', comment: '草稿儲存中' }
     ],
+    versions: [],
     impact: {
       affectedSystems: 0,
       affectedUsers: 0,
@@ -241,6 +335,7 @@ WHERE r.risk_level IN ({{risk_levels}})
       { action: 'Create', user: 'John Doe', time: '2026-08-29 08:00:00', comment: '新增風控特徵 SQL' },
       { action: 'Submit Review', user: 'John Doe', time: '2026-08-29 08:30:00', comment: '送審以供風控 DAG 正式排程調用' }
     ],
+    versions: [],
     impact: {
       affectedSystems: 3,
       affectedUsers: 8,
@@ -360,6 +455,18 @@ class DataStore {
     const tpl = this.getById(id);
     if (!tpl) return false;
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    // Snapshot current SQL into versions before status change
+    if (!tpl.versions) tpl.versions = [];
+    const nextVersion = tpl.versions.length + 1;
+    tpl.versions.push({
+      version: nextVersion,
+      rawSql: tpl.rawSql || '',
+      templateSql: tpl.templateSql || '',
+      approvedAt: now,
+      approvedBy: approver
+    });
+
     tpl.reviewStatus = 'Approved';
     tpl.usageStatus = 'Active';
     tpl.updatedAt = now;
@@ -423,6 +530,31 @@ class DataStore {
   resetToDefaults() {
     this.templates = JSON.parse(JSON.stringify(INITIAL_TEMPLATES));
     this.save();
+  }
+  /**
+   * Get the previous approved version of a template (for diff comparison).
+   * - If 'In Review' or 'Draft': compares against the latest approved version (last entry in versions[])
+   * - If 'Approved': compares against the previous approved version (second-to-last entry in versions[])
+   */
+  getPreviousVersion(id) {
+    const tpl = this.getById(id);
+    if (!tpl || !tpl.versions || tpl.versions.length === 0) return null;
+
+    if (tpl.reviewStatus === 'In Review' || tpl.reviewStatus === 'Draft') {
+      return tpl.versions[tpl.versions.length - 1];
+    }
+
+    if (tpl.versions.length < 2) return null;
+    return tpl.versions[tpl.versions.length - 2];
+  }
+
+  /**
+   * Get the latest approved version snapshot (last entry in versions[]).
+   */
+  getLatestVersion(id) {
+    const tpl = this.getById(id);
+    if (!tpl || !tpl.versions || tpl.versions.length === 0) return null;
+    return tpl.versions[tpl.versions.length - 1];
   }
 }
 
