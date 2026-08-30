@@ -434,16 +434,132 @@ class DataStore {
     return this.getById(tplData.id);
   }
 
+  getUserRole(userName = this.currentUser) {
+    if (!userName) return 'user';
+    if (userName.includes('Governance Lead') || userName.includes('(Admin)') || userName.includes('[Admin]')) {
+      return 'admin';
+    }
+    if (userName.includes('Data Architect') || userName.includes('(Reviewer)') || userName.includes('[Reviewer]')) {
+      return 'reviewer';
+    }
+    return 'user';
+  }
+
+  isAdmin(userName = this.currentUser) {
+    return this.getUserRole(userName) === 'admin';
+  }
+
+  isReviewer(userName = this.currentUser) {
+    const role = this.getUserRole(userName);
+    return role === 'reviewer' || role === 'admin';
+  }
+
+  isAuthor(tpl, userName = this.currentUser) {
+    if (!tpl || !tpl.author || !userName) return false;
+    const authorPrefix = tpl.author.split(' ')[0];
+    const userPrefix = userName.split(' ')[0];
+    return tpl.author === userName || tpl.author.includes(userPrefix) || userName.includes(authorPrefix);
+  }
+
+  canEdit(tpl, userName = this.currentUser) {
+    if (!tpl) return false;
+    const hasRole = this.isAuthor(tpl, userName) || this.isAdmin(userName);
+    const validStatus = (tpl.reviewStatus === 'Draft' || tpl.reviewStatus === 'Approved') && tpl.reviewType !== 'delete';
+    return hasRole && validStatus;
+  }
+
+  canDelete(tpl, userName = this.currentUser) {
+    if (!tpl) return false;
+    const hasRole = this.isAuthor(tpl, userName) || this.isAdmin(userName);
+    const validStatus = tpl.reviewStatus !== 'In Review' && tpl.reviewType !== 'delete';
+    return hasRole && validStatus;
+  }
+
+  canReview(tpl, userName = this.currentUser) {
+    if (!tpl) return false;
+    if (tpl.reviewStatus !== 'In Review') return false;
+    if (this.isAdmin(userName)) return true; // Admin can review / approve any pending item (代人審核)
+    const userPrefix = userName.split(' ')[0];
+    return tpl.assignee === userName || (tpl.assignee && tpl.assignee.includes(userPrefix));
+  }
+
+  duplicateTemplate(id) {
+    const original = this.getById(id);
+    if (!original) return null;
+
+    // Generate unique ID
+    let newId = `${original.id}_COPY`;
+    let counter = 1;
+    while (this.checkIdExists(newId)) {
+      newId = `${original.id}_COPY_${counter}`;
+      counter++;
+    }
+
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const cloned = JSON.parse(JSON.stringify(original));
+
+    cloned.id = newId;
+    cloned.name = `[副本] ${original.name}`;
+    cloned.reviewStatus = 'Draft';
+    cloned.usageStatus = 'Disabled';
+    cloned.reviewType = null;
+    cloned.author = this.currentUser;
+    cloned.updatedAt = now;
+    cloned.history = [
+      {
+        action: 'Create',
+        user: this.currentUser,
+        time: now,
+        comment: `從樣板 ${original.id} 複製建立副本`
+      }
+    ];
+    cloned.versions = [
+      {
+        version: 1,
+        rawSql: cloned.rawSql || '',
+        templateSql: cloned.templateSql || '',
+        approvedAt: null,
+        approvedBy: null
+      }
+    ];
+
+    this.templates.unshift(cloned);
+    this.save();
+    return cloned;
+  }
+
+  requestDeleteTemplate(id, reason, requester = this.currentUser) {
+    const tpl = this.getById(id);
+    if (!tpl) return false;
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    tpl.reviewStatus = 'In Review';
+    tpl.reviewType = 'delete'; // mark as deletion review
+    tpl.usageStatus = 'Disabled';
+    tpl.updatedAt = now;
+    if (!tpl.history) tpl.history = [];
+    tpl.history.push({
+      action: 'Request Delete',
+      user: requester,
+      time: now,
+      comment: `申請刪除原因：${reason || '使用者申請下線移除'}`
+    });
+
+    this.save();
+    return true;
+  }
+
   submitForReview(id) {
     const tpl = this.getById(id);
     if (!tpl) return false;
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     tpl.reviewStatus = 'In Review';
+    tpl.reviewType = null;
     tpl.usageStatus = 'Disabled';
     tpl.updatedAt = now;
     tpl.history.push({
       action: 'Submit Review',
-      user: 'Current User',
+      user: this.currentUser,
       time: now,
       comment: '送出審核申請'
     });
@@ -451,12 +567,19 @@ class DataStore {
     return true;
   }
 
-  approveTemplate(id, approver = 'Data Governance Admin', comment = '審核通過，正式發布上線') {
+  approveTemplate(id, approver = this.currentUser, comment = '') {
     const tpl = this.getById(id);
     if (!tpl) return false;
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
-    // Snapshot current SQL into versions before status change
+    // If this was a deletion review
+    if (tpl.reviewType === 'delete') {
+      this.templates = this.templates.filter(t => t.id !== id);
+      this.save();
+      return true;
+    }
+
+    // Normal approval
     if (!tpl.versions) tpl.versions = [];
     const nextVersion = tpl.versions.length + 1;
     tpl.versions.push({
@@ -469,23 +592,42 @@ class DataStore {
 
     tpl.reviewStatus = 'Approved';
     tpl.usageStatus = 'Active';
+    tpl.reviewType = null;
     tpl.updatedAt = now;
     tpl.history.push({
       action: 'Approve',
       user: approver,
       time: now,
-      comment
+      comment: comment || '審核通過，正式發布上線'
     });
     this.save();
     return true;
   }
 
-  rejectTemplate(id, reason, rejector = 'Data Governance Admin') {
+  rejectTemplate(id, reason, rejector = this.currentUser) {
     const tpl = this.getById(id);
     if (!tpl) return false;
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    if (tpl.reviewType === 'delete') {
+      // Rejection of deletion restores template to Approved
+      tpl.reviewStatus = 'Approved';
+      tpl.usageStatus = 'Active';
+      tpl.reviewType = null;
+      tpl.updatedAt = now;
+      tpl.history.push({
+        action: 'Reject Delete',
+        user: rejector,
+        time: now,
+        comment: `拒絕刪除申請：${reason}`
+      });
+      this.save();
+      return true;
+    }
+
     tpl.reviewStatus = 'Draft';
     tpl.usageStatus = 'Disabled';
+    tpl.reviewType = null;
     tpl.updatedAt = now;
     tpl.history.push({
       action: 'Reject',
@@ -506,7 +648,7 @@ class DataStore {
     tpl.updatedAt = now;
     tpl.history.push({
       action: tpl.usageStatus === 'Active' ? 'Enable' : 'Disable',
-      user: 'Current User',
+      user: this.currentUser,
       time: now,
       comment: `切換使用狀態為 ${tpl.usageStatus === 'Active' ? '可使用' : '停止使用'}`
     });

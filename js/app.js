@@ -64,10 +64,16 @@ class AppRouter {
 
     // Quick action: reset data
     document.getElementById('btn-reset-demo-data')?.addEventListener('click', () => {
-      if (confirm('確定要將所有 SQL Template 資料重置為系統預設範例？')) {
-        store.resetToDefaults();
-        toast.info('系統展示資料已重設');
-      }
+      ModalManager.showConfirmModal({
+        title: '⚠️ 重設展示資料',
+        content: '確定要將所有 SQL Template 資料重置為系統預設範例？\n此動作將清除當前所有新增、修改與刪除的本機資料。',
+        type: 'warning',
+        confirmText: '確認重設',
+        onConfirm: () => {
+          store.resetToDefaults();
+          toast.info('系統展示資料已重設');
+        }
+      });
     });
 
     // Modal close binds
@@ -92,6 +98,12 @@ class AppRouter {
     document.getElementById('btn-cancel-reject-modal')?.addEventListener('click', () => ModalManager.closeRejectModal());
     document.getElementById('reject-modal-overlay')?.addEventListener('click', (e) => {
       if (e.target.id === 'reject-modal-overlay') ModalManager.closeRejectModal();
+    });
+
+    document.getElementById('btn-close-delete-modal')?.addEventListener('click', () => ModalManager.closeDeleteModal());
+    document.getElementById('btn-cancel-delete-modal')?.addEventListener('click', () => ModalManager.closeDeleteModal());
+    document.getElementById('delete-modal-overlay')?.addEventListener('click', (e) => {
+      if (e.target.id === 'delete-modal-overlay') ModalManager.closeDeleteModal();
     });
   }
 

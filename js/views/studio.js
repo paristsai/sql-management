@@ -772,12 +772,18 @@ GROUP BY u.user_id, u.phone_number, u.register_date;`;
     const btnCancel = this.container.querySelector('#studio-btn-cancel');
     if (btnCancel) {
       btnCancel.onclick = () => {
-        if (confirm('確定要放棄當前所有未儲存的變更並返回目錄？')) {
-          if (this.mode === 'batch_import') {
-            window.removeEventListener('keydown', this.boundBatchKeyHandler);
+        ModalManager.showConfirmModal({
+          title: '放棄變更',
+          content: '確定要放棄當前所有未儲存的變更並返回目錄？',
+          type: 'warning',
+          confirmText: '確認放棄',
+          onConfirm: () => {
+            if (this.mode === 'batch_import') {
+              window.removeEventListener('keydown', this.boundBatchKeyHandler);
+            }
+            window.AppRouter.navigate('catalog');
           }
-          window.AppRouter.navigate('catalog');
-        }
+        });
       };
     }
 

@@ -40,7 +40,7 @@ export class CatalogView {
         <!-- Catalog Header -->
         <div class="catalog-header">
           <div class="catalog-title-group">
-            <h1>SQL 樣板資產目錄 (Data Assets Catalog)</h1>
+            <h1>SQL 樣板</h1>
             <p>全公司標準化數據查詢與 API 調用樣板，點擊任一列可快速檢視 SQL 內容與調用方式</p>
           </div>
           <div style="display: flex; gap: 10px; align-items: center;">
@@ -290,7 +290,9 @@ export class CatalogView {
 
     tbody.innerHTML = data.map(tpl => {
       let reviewStatus = '<span style="color:#64748b; font-size:12px; font-weight:500;">草稿</span>';
-      if (tpl.reviewStatus === 'In Review') {
+      if (tpl.reviewType === 'delete' || (tpl.reviewStatus === 'In Review' && tpl.reviewType === 'delete')) {
+        reviewStatus = '<span style="color:#e11d48; font-size:12px; font-weight:600;">刪除審核中</span>';
+      } else if (tpl.reviewStatus === 'In Review') {
         reviewStatus = '<span style="color:#d97706; font-size:12px; font-weight:500;">審核中</span>';
       } else if (tpl.reviewStatus === 'Approved') {
         reviewStatus = '<span style="color:#059669; font-size:12px; font-weight:500;">已核准</span>';
@@ -342,11 +344,7 @@ export class CatalogView {
   }
 
   hasEditPermission(tpl) {
-    if (!tpl) return false;
-    const currentUser = store.getCurrentUser();
-    const isAuthor = tpl.author && (tpl.author === currentUser || tpl.author.includes(currentUser.split(' ')[0]));
-    const isAdmin = currentUser.includes('Data Architect') || currentUser.includes('Governance Lead');
-    return isAuthor || isAdmin;
+    return store.canEdit(tpl);
   }
 
   async openDetailModal(id) {
@@ -365,6 +363,8 @@ export class CatalogView {
     const statusBadge = document.getElementById('modal-catalog-status-badge');
     const footerInfo = document.getElementById('modal-catalog-footer-info');
     const editBtn = document.getElementById('btn-modal-catalog-edit');
+    const duplicateBtn = document.getElementById('btn-modal-catalog-duplicate');
+    const deleteBtn = document.getElementById('btn-modal-catalog-delete');
     const copySqlBtn = document.getElementById('btn-modal-catalog-copy-sql');
     const apiBtn = document.getElementById('btn-modal-catalog-api');
     const closeBtn = document.getElementById('btn-modal-catalog-close');
@@ -378,7 +378,10 @@ export class CatalogView {
     titleEl.style.color = '#0f172a';
     typeBadge.textContent = tpl.id;
 
-    if (tpl.reviewStatus === 'Approved') {
+    if (tpl.reviewType === 'delete') {
+      statusBadge.style.color = '#e11d48';
+      statusBadge.textContent = '• 刪除審核中';
+    } else if (tpl.reviewStatus === 'Approved') {
       statusBadge.style.color = '#059669';
       statusBadge.textContent = '• 已核准 (可調用)';
     } else if (tpl.reviewStatus === 'In Review') {
@@ -389,12 +392,38 @@ export class CatalogView {
       statusBadge.textContent = '• 草稿';
     }
 
-    const canEdit = this.hasEditPermission(tpl);
+    const canEdit = store.canEdit(tpl);
     if (editBtn) {
       editBtn.style.display = canEdit ? 'inline-flex' : 'none';
       editBtn.onclick = () => {
         this.closeDetailModal();
         window.AppRouter.navigate('studio', { mode: 'edit', id });
+      };
+    }
+
+    const canDuplicate = store.isAuthor(tpl) || store.isAdmin();
+    if (duplicateBtn) {
+      duplicateBtn.style.display = canDuplicate ? 'inline-flex' : 'none';
+      duplicateBtn.onclick = () => {
+        const cloned = store.duplicateTemplate(id);
+        if (cloned) {
+          toast.success(`已複製樣板為 [${cloned.id}]，即將進入工作台！`);
+          this.closeDetailModal();
+          window.AppRouter.navigate('studio', { mode: 'edit', id: cloned.id });
+        }
+      };
+    }
+
+    const canDelete = store.canDelete(tpl);
+    if (deleteBtn) {
+      deleteBtn.style.display = canDelete ? 'inline-flex' : 'none';
+      deleteBtn.onclick = () => {
+        ModalManager.showDeleteModal((reason) => {
+          store.requestDeleteTemplate(id, reason);
+          toast.warning(`已提交樣板 [${id}] 之刪除審核申請！`);
+          this.closeDetailModal();
+          this.renderTable();
+        }, `${tpl.name} (${tpl.id})`);
       };
     }
 

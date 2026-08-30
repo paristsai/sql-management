@@ -23,18 +23,25 @@ export class ReviewView {
   }
 
   async init(params = {}) {
-    this.renderLayout();
-    this.bindEvents();
+    if (!this.isInitialized) {
+      this.renderLayout();
+      this.bindEvents();
+      this.isInitialized = true;
 
-    store.subscribe(() => {
+      store.subscribe(() => {
+        this.renderStats();
+        this.updateTabBadges();
+        this.renderTable();
+        if (this.modalTemplateId) {
+          this.updateReadOnlyInfoPane(this.modalTemplateId);
+          this.renderModalSteps(store.getById(this.modalTemplateId));
+        }
+      });
+    } else {
       this.renderStats();
       this.updateTabBadges();
       this.renderTable();
-      if (this.modalTemplateId) {
-        this.updateReadOnlyInfoPane(this.modalTemplateId);
-        this.renderModalSteps(store.getById(this.modalTemplateId));
-      }
-    });
+    }
 
     if (params.id) {
       this.openReviewModal(params.id);
@@ -130,14 +137,40 @@ export class ReviewView {
     this.renderTable();
   }
 
-  renderStats() {
+  getAssignedPendingList() {
     const all = store.getAll();
     const currentUser = store.getCurrentUser();
+    const currentPrefix = currentUser.split(' ')[0];
+    const isAdmin = store.isAdmin(currentUser);
 
-    const pendingAssigned = all.filter(t => t.reviewStatus === 'In Review' && (t.assignee === currentUser || t.assignee?.includes(currentUser.split(' ')[0]))).length;
+    return all.filter(t => {
+      if (t.reviewStatus !== 'In Review') return false;
+      if (isAdmin) return true; // Admin can review all pending items
+      return t.assignee === currentUser || (t.assignee && t.assignee.includes(currentPrefix));
+    });
+  }
+
+  getMySubmissionsList() {
+    const all = store.getAll();
+    const currentUser = store.getCurrentUser();
+    return all.filter(t => store.isAuthor(t, currentUser));
+  }
+
+  getAllReviewsList() {
+    const assigned = this.getAssignedPendingList();
+    const my = this.getMySubmissionsList();
+    const map = new Map();
+    assigned.forEach(t => map.set(t.id, t));
+    my.forEach(t => map.set(t.id, t));
+    return Array.from(map.values());
+  }
+
+  renderStats() {
+    const all = store.getAll();
+    const pendingAssigned = this.getAssignedPendingList().length;
     const totalPending = all.filter(t => t.reviewStatus === 'In Review').length;
     const totalApproved = all.filter(t => t.reviewStatus === 'Approved').length;
-    const mySubmissions = all.filter(t => t.author === currentUser || t.author?.includes(currentUser.split(' ')[0])).length;
+    const mySubmissions = this.getMySubmissionsList().length;
 
     const statsGrid = this.container.querySelector('#review-stats-grid');
     if (!statsGrid) return;
@@ -147,7 +180,7 @@ export class ReviewView {
         <div class="review-stat-info">
           <span class="review-stat-label">待我審核 (Assign to me)</span>
           <span class="review-stat-value">${pendingAssigned}</span>
-          <span class="review-stat-desc">目前指派給您的待辦</span>
+          <span class="review-stat-desc">目前指派給您或可代審之待辦</span>
         </div>
       </div>
 
@@ -178,13 +211,9 @@ export class ReviewView {
   }
 
   updateTabBadges() {
-    const all = store.getAll();
-    const currentUser = store.getCurrentUser();
-    const currentPrefix = currentUser.split(' ')[0];
-
-    const assignedCount = all.filter(t => t.assignee === currentUser || t.assignee?.includes(currentPrefix)).length;
-    const myCount = all.filter(t => t.author === currentUser || t.author?.includes(currentPrefix)).length;
-    const allCount = all.length;
+    const assignedCount = this.getAssignedPendingList().length;
+    const myCount = this.getMySubmissionsList().length;
+    const allCount = this.getAllReviewsList().length;
 
     const assignedBadge = this.container.querySelector('#tab-badge-assigned');
     const myBadge = this.container.querySelector('#tab-badge-my');
@@ -196,18 +225,14 @@ export class ReviewView {
   }
 
   getFilteredData() {
-    const all = store.getAll();
-    const currentUser = store.getCurrentUser();
-    const currentPrefix = currentUser.split(' ')[0];
-
     // Step 1: Filter by active tab
     let list = [];
     if (this.activeTab === 'assigned') {
-      list = all.filter(t => t.assignee === currentUser || t.assignee?.includes(currentPrefix));
+      list = this.getAssignedPendingList();
     } else if (this.activeTab === 'my') {
-      list = all.filter(t => t.author === currentUser || t.author?.includes(currentPrefix));
+      list = this.getMySubmissionsList();
     } else {
-      list = [...all];
+      list = this.getAllReviewsList();
     }
 
     // Step 2: Filter by status
@@ -259,7 +284,9 @@ export class ReviewView {
     tbody.innerHTML = list.map(t => {
       // Status
       let statusTag = '';
-      if (t.reviewStatus === 'In Review') {
+      if (t.reviewType === 'delete' || (t.reviewStatus === 'In Review' && t.reviewType === 'delete')) {
+        statusTag = `<span style="color:#e11d48; font-weight:600; font-size:12px;">刪除審核中</span>`;
+      } else if (t.reviewStatus === 'In Review') {
         statusTag = `<span style="color:#d97706; font-weight:500; font-size:12px;">審核中</span>`;
       } else if (t.reviewStatus === 'Approved') {
         statusTag = `<span style="color:#059669; font-weight:500; font-size:12px;">已核准</span>`;
@@ -346,7 +373,11 @@ export class ReviewView {
     typeBadge.className = '';
     typeBadge.style.cssText = 'font-family: var(--font-mono); font-size: 12px; color: #64748b; font-weight: 500;';
 
-    if (tpl.reviewStatus === 'In Review') {
+    if (tpl.reviewType === 'delete' || (tpl.reviewStatus === 'In Review' && tpl.reviewType === 'delete')) {
+      statusBadge.className = '';
+      statusBadge.style.cssText = 'font-size: 12px; color: #e11d48; font-weight: 600; margin-left: 6px;';
+      statusBadge.textContent = '• 刪除審核中';
+    } else if (tpl.reviewStatus === 'In Review') {
       statusBadge.className = '';
       statusBadge.style.cssText = 'font-size: 12px; color: #d97706; font-weight: 500; margin-left: 6px;';
       statusBadge.textContent = '• 審核中';
@@ -363,32 +394,35 @@ export class ReviewView {
     // Check if diff is available (needs at least 1 previous version)
     const hasPreviousVersion = store.getPreviousVersion(id) !== null;
 
-    // Build fullscreen body: [sql-pane] | [splitter] | [info-pane]
+    // Build fullscreen body
     modalBody.innerHTML = `
       <!-- Left SQL Pane -->
       <div class="review-sql-pane" id="review-sql-pane" style="width: 50%;">
         <div class="review-sql-toolbar">
           <div class="review-sql-tabs">
-            <button class="review-sql-tab active" id="review-tab-raw" data-tab="raw">Raw SQL</button>
-            <button class="review-sql-tab" id="review-tab-template" data-tab="template">SQL Template</button>
+            <button class="review-sql-tab ${this.modalActiveTab === 'raw' ? 'active' : ''}" id="review-tab-raw">Raw SQL</button>
+            <button class="review-sql-tab ${this.modalActiveTab === 'template' ? 'active' : ''}" id="review-tab-template">SQL Template</button>
           </div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="review-sql-tab-diff-legend" id="review-diff-legend" style="display:none;">
-              <span class="review-diff-legend-item">
-                <span class="review-diff-legend-dot" style="background:#fecaca;"></span>刪除
-              </span>
-              <span class="review-diff-legend-item">
-                <span class="review-diff-legend-dot" style="background:#bbf7d0;"></span>新增
-              </span>
-            </div>
-            <button class="review-diff-toggle-btn ${hasPreviousVersion ? '' : 'disabled'}" id="review-btn-diff-toggle"
-              ${hasPreviousVersion ? '' : 'disabled'}
-              title="${hasPreviousVersion ? '切換版本差異對照' : '無歷史版本可比對'}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
-              </svg>
-              版本差異
-            </button>
+          <div class="review-sql-actions">
+            <!-- Diff Mode Toggle -->
+            ${hasPreviousVersion ? `
+              <div class="sql-diff-legend" id="review-diff-legend" style="${this.modalDiffEnabled ? 'display: flex;' : 'display: none;'}">
+                <span class="sql-diff-legend-item">
+                  <span class="sql-diff-dot-del"></span>上一核准版
+                </span>
+                <span class="sql-diff-legend-item">
+                  <span class="sql-diff-dot-add"></span>本次送審版
+                </span>
+              </div>
+              <button class="sql-diff-toggle-btn ${this.modalDiffEnabled ? 'active' : ''}" id="btn-review-diff-toggle" title="切換與上一版 SQL 之比對模式">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+                </svg>
+                <span>版本比對</span>
+              </button>
+            ` : ''}
+
+            <!-- Highlight Legend & Toggle -->
             <div class="sql-highlight-legend" id="review-highlight-legend" style="${this.modalHighlightEnabled ? 'display: flex;' : 'display: none;'}">
               <span class="sql-highlight-legend-item">
                 <span class="sql-highlight-dot-pii"></span>敏感欄位
@@ -397,7 +431,7 @@ export class ReviewView {
                 <span class="sql-highlight-dot-param"></span>動態參數
               </span>
             </div>
-            <button class="sql-highlight-toggle-btn ${this.modalHighlightEnabled ? 'active' : ''}" id="review-btn-highlight-toggle" title="切換敏感欄位與動態參數高亮標記">
+            <button class="sql-highlight-toggle-btn ${this.modalHighlightEnabled ? 'active' : ''}" id="btn-review-highlight-toggle" title="切換敏感欄位與動態參數高亮標記">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
@@ -408,39 +442,51 @@ export class ReviewView {
         <div class="review-editor-area" id="review-editor-area"></div>
       </div>
 
-      <!-- Splitter -->
+      <!-- Resizable Splitter -->
       <div class="review-splitter" id="review-splitter"></div>
 
-      <!-- Right Info Pane -->
+      <!-- Right Metadata / Info Pane -->
       <div class="review-info-pane" id="review-info-pane" style="flex: 1; min-width: 0;">
         ${this.buildReadOnlyInfoPaneHTML(tpl)}
       </div>
     `;
 
-    // Init editor (default: raw SQL, diff off)
+    // Render Monaco editor inside left pane
     await this._renderSqlEditor(tpl);
 
-    // Bind SQL tab events
+    // Event binding: Raw / Template tabs
     const tabRaw = modalBody.querySelector('#review-tab-raw');
     const tabTemplate = modalBody.querySelector('#review-tab-template');
-    const btnDiffToggle = modalBody.querySelector('#review-btn-diff-toggle');
-    const btnHighlightToggle = modalBody.querySelector('#review-btn-highlight-toggle');
-    const highlightLegend = modalBody.querySelector('#review-highlight-legend');
 
-    tabRaw.addEventListener('click', () => {
+    tabRaw?.addEventListener('click', async () => {
       this.modalActiveTab = 'raw';
-      this._renderSqlEditor(tpl);
+      tabRaw.classList.add('active');
+      tabTemplate?.classList.remove('active');
+      await this._renderSqlEditor(tpl);
     });
-    tabTemplate.addEventListener('click', () => {
+
+    tabTemplate?.addEventListener('click', async () => {
       this.modalActiveTab = 'template';
-      this._renderSqlEditor(tpl);
+      tabTemplate.classList.add('active');
+      tabRaw?.classList.remove('active');
+      await this._renderSqlEditor(tpl);
     });
-    if (hasPreviousVersion) {
-      btnDiffToggle.addEventListener('click', () => {
-        this.modalDiffEnabled = !this.modalDiffEnabled;
-        this._renderSqlEditor(tpl);
-      });
-    }
+
+    // Event binding: Diff toggle
+    const btnDiffToggle = modalBody.querySelector('#btn-review-diff-toggle');
+    const diffLegend = modalBody.querySelector('#review-diff-legend');
+    btnDiffToggle?.addEventListener('click', async () => {
+      this.modalDiffEnabled = !this.modalDiffEnabled;
+      btnDiffToggle.classList.toggle('active', this.modalDiffEnabled);
+      if (diffLegend) {
+        diffLegend.style.display = this.modalDiffEnabled ? 'flex' : 'none';
+      }
+      await this._renderSqlEditor(tpl);
+    });
+
+    // Event binding: Highlight toggle
+    const btnHighlightToggle = modalBody.querySelector('#btn-review-highlight-toggle');
+    const highlightLegend = modalBody.querySelector('#review-highlight-legend');
     if (btnHighlightToggle) {
       btnHighlightToggle.addEventListener('click', () => {
         this.modalHighlightEnabled = !this.modalHighlightEnabled;
@@ -493,31 +539,100 @@ export class ReviewView {
     document.getElementById('btn-close-review-modal')?.addEventListener('click', this.closeReviewModal);
     document.getElementById('btn-modal-review-close')?.addEventListener('click', this.closeReviewModal);
 
+    // Dynamic Button Visibility & Actions based on tab and permissions
+    const canReview = store.canReview(tpl);
+    const canEdit = store.canEdit(tpl);
+
+    if (this.activeTab === 'assigned') {
+      if (editBtn) editBtn.style.display = 'none';
+      if (rejectBtn) rejectBtn.style.display = 'inline-flex';
+      if (approveBtn) approveBtn.style.display = 'inline-flex';
+    } else if (this.activeTab === 'my') {
+      if (rejectBtn) rejectBtn.style.display = 'none';
+      if (approveBtn) approveBtn.style.display = 'none';
+      if (editBtn) editBtn.style.display = canEdit ? 'inline-flex' : 'none';
+    } else {
+      // 'all' tab: union logic
+      if (canReview) {
+        if (editBtn) editBtn.style.display = 'none';
+        if (rejectBtn) rejectBtn.style.display = 'inline-flex';
+        if (approveBtn) approveBtn.style.display = 'inline-flex';
+      } else if (canEdit) {
+        if (rejectBtn) rejectBtn.style.display = 'none';
+        if (approveBtn) approveBtn.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'inline-flex';
+      } else {
+        if (rejectBtn) rejectBtn.style.display = 'none';
+        if (approveBtn) approveBtn.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'none';
+      }
+    }
+
     if (rejectBtn) {
       rejectBtn.onclick = () => {
         ModalManager.showRejectModal((reason) => {
           store.rejectTemplate(id, reason);
-          toast.warning(`Template [${id}] 已退回修正！`);
+          if (tpl.reviewType === 'delete') {
+            toast.warning(`Template [${id}] 刪除申請已退回，樣板恢復為可使用狀態！`);
+          } else {
+            toast.warning(`Template [${id}] 已退回修正！`);
+          }
           this.closeReviewModal();
+          this.renderTable();
+          this.renderStats();
+          this.updateTabBadges();
         });
       };
     }
 
     if (approveBtn) {
-      if (tpl.reviewStatus === 'Approved') {
+      if (tpl.reviewType === 'delete') {
+        approveBtn.disabled = false;
+        approveBtn.className = 'btn btn-danger btn-sm';
+        approveBtn.innerHTML = '✓ 核准刪除 (Approve Delete)';
+        approveBtn.onclick = () => {
+          ModalManager.showConfirmModal({
+            title: '🗑️ 確認核准刪除樣板',
+            content: `確定要核准刪除 SQL 樣板 [${tpl.name} (${id})]？\n核准後此樣板將正式下線並從資產目錄中永久移除。`,
+            type: 'danger',
+            confirmText: '確認核准刪除',
+            onConfirm: () => {
+              const ok = store.approveTemplate(id);
+              if (ok) {
+                toast.success(`Template [${id}] 刪除申請已核准，樣板已正式下線移除！`);
+                this.closeReviewModal();
+                this.renderTable();
+                this.renderStats();
+                this.updateTabBadges();
+              }
+            }
+          });
+        };
+      } else if (tpl.reviewStatus === 'Approved') {
+        approveBtn.className = 'btn btn-success btn-sm';
         approveBtn.disabled = true;
         approveBtn.textContent = '✓ 已核准上線';
       } else {
+        approveBtn.className = 'btn btn-success btn-sm';
         approveBtn.disabled = false;
         approveBtn.innerHTML = '✓ 核准發布 (Approve)';
         approveBtn.onclick = () => {
-          if (confirm(`確定核准 Template [${id}]？\n核准後狀態將變更為「可使用 (Active)」。`)) {
-            const ok = store.approveTemplate(id);
-            if (ok) {
-              toast.success(`Template [${id}] 審核通過，正式發布上線！`);
-              this.closeReviewModal();
+          ModalManager.showConfirmModal({
+            title: '✓ 確認核准發布',
+            content: `確定要核准發布 SQL 樣板 [${tpl.name} (${id})]？\n核准後狀態將變更為「可使用 (Active)」並正式開放調用。`,
+            type: 'primary',
+            confirmText: '確認發布上線',
+            onConfirm: () => {
+              const ok = store.approveTemplate(id);
+              if (ok) {
+                toast.success(`Template [${id}] 審核通過，正式發布上線！`);
+                this.closeReviewModal();
+                this.renderTable();
+                this.renderStats();
+                this.updateTabBadges();
+              }
             }
-          }
+          });
         };
       }
     }

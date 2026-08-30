@@ -20,12 +20,16 @@
   padding: 4px 10px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .user-switcher-label {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .user-switcher-select {
@@ -417,64 +421,99 @@
   border-bottom-color: #0f172a;
 }
 
+.review-sql-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sql-diff-legend,
 .review-sql-tab-diff-legend {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: #64748b;
+  user-select: none;
 }
 
+.sql-diff-legend-item,
 .review-diff-legend-item {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
+.sql-diff-dot-del {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #fecaca;
+  border: 1px solid #f87171;
+}
+
+.sql-diff-dot-add {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #bbf7d0;
+  border: 1px solid #4ade80;
+}
+
 .review-diff-legend-dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
 }
 
+.sql-diff-toggle-btn,
 .review-diff-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 12px;
   font-weight: 500;
-  padding: 4px 10px;
+  padding: 3px 9px;
   border: 1px solid #e2e8f0;
   border-radius: 4px;
   background: #ffffff;
   color: #475569;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
   white-space: nowrap;
+  user-select: none;
 }
 
+.sql-diff-toggle-btn:hover:not(.disabled),
 .review-diff-toggle-btn:hover:not(.disabled) {
   background: #f8fafc;
   color: #0f172a;
   border-color: #cbd5e1;
 }
 
+.sql-diff-toggle-btn.active,
 .review-diff-toggle-btn.active {
   background: #0f172a;
   color: #ffffff;
   border-color: #0f172a;
 }
 
+.sql-diff-toggle-btn.active:hover,
 .review-diff-toggle-btn.active:hover {
   background: #1e293b;
   border-color: #1e293b;
 }
 
+.sql-diff-toggle-btn.active svg,
 .review-diff-toggle-btn.active svg {
   stroke: #ffffff;
 }
 
+.sql-diff-toggle-btn.disabled,
 .review-diff-toggle-btn.disabled {
   opacity: 0.35;
   cursor: not-allowed;
@@ -523,13 +562,14 @@
 
 /* ── Right Info Pane ── */
 .review-info-pane {
+  flex: 1;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 24px 28px;
   background: #ffffff;
-  min-width: 260px;
+  min-width: 0;
 }
 
 /* Sections without card borders or box-shadows */

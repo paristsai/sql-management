@@ -10,12 +10,12 @@
   <title>SQL Template 管理平台 - DataStudio</title>
 
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/catalog.css">
-  <link rel="stylesheet" href="css/studio.css">
-  <link rel="stylesheet" href="css/review.css">
-  <link rel="stylesheet" href="css/import-modal.css">
+  <link rel="stylesheet" href="css/main.css?v=2.5.2">
+  <link rel="stylesheet" href="css/components.css?v=2.5.2">
+  <link rel="stylesheet" href="css/catalog.css?v=2.5.2">
+  <link rel="stylesheet" href="css/studio.css?v=2.5.2">
+  <link rel="stylesheet" href="css/review.css?v=2.5.2">
+  <link rel="stylesheet" href="css/import-modal.css?v=2.5.2">
 </head>
 
 <body>
@@ -30,10 +30,10 @@
 
     <nav class="header-nav">
       <button class="nav-item active" data-view="catalog">
-        <span>資產目錄 (Catalog)</span>
+        <span>SQL 樣板</span>
       </button>
       <button class="nav-item" data-view="review">
-        <span>審核中心 (Review)</span>
+        <span>審核中心</span>
         <span class="nav-count" id="nav-review-count">1</span>
       </button>
     </nav>
@@ -44,12 +44,12 @@
         重設展示資料
       </button>
       <div class="user-switcher-wrapper">
-        <label for="global-user-switcher" class="user-switcher-label">目前登入視角:</label>
+        <label for="global-user-switcher" class="user-switcher-label">目前登入:</label>
         <select class="form-select user-switcher-select" id="global-user-switcher">
-          <option value="John Doe (Data Architect)">John Doe (Data Architect)</option>
-          <option value="Alex Chen (Data Engineer)">Alex Chen (Data Engineer)</option>
-          <option value="Sarah Wu (Governance Lead)">Sarah Wu (Governance Lead)</option>
-          <option value="Emily Lin (FinTech)">Emily Lin (FinTech)</option>
+          <option value="Sarah Wu (Governance Lead)">Sarah Wu (Governance Lead) [Admin]</option>
+          <option value="John Doe (Data Architect)">John Doe (Data Architect) [Reviewer]</option>
+          <option value="Alex Chen (Data Engineer)">Alex Chen (Data Engineer) [User]</option>
+          <option value="Emily Lin (FinTech)">Emily Lin (FinTech) [User]</option>
         </select>
       </div>
     </div>
@@ -129,6 +129,21 @@
             </svg>
             API 調用指引
           </button>
+          <button class="btn btn-outline btn-sm" id="btn-modal-catalog-duplicate" title="複製此樣板並在工作台開立新草稿">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            複製樣板 (Duplicate)
+          </button>
+          <button class="btn btn-danger-outline btn-sm" id="btn-modal-catalog-delete" style="display: none;"
+            title="申請刪除此樣板並走審核流程">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+            申請刪除
+          </button>
           <button class="btn btn-primary btn-sm" id="btn-modal-catalog-edit" style="display: none;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -193,11 +208,38 @@
     </div>
   </div>
 
+  <!-- Global Modal: Delete Request Reason Comment -->
+  <div class="modal-overlay" id="delete-modal-overlay">
+    <div class="modal-container" style="max-width: 480px;">
+      <div class="modal-header" style="background:#fff1f2; border-bottom-color:#fecdd3;">
+        <div class="modal-title" style="color:#9f1239;">🗑️ 申請刪除 SQL 樣板 (Delete Request)</div>
+        <button class="btn btn-outline btn-xs" id="btn-close-delete-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 8px;" id="delete-modal-tpl-name">
+          樣板：-
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            <span>申請刪除原因說明<span class="required">* (必填)</span></span>
+          </label>
+          <textarea class="form-textarea" id="delete-reason-input" rows="4"
+            placeholder="請詳細說明申請下線或刪除此樣板的原因（如：業務表結構已重構下線、已被新樣板取代等）..."></textarea>
+          <div class="form-hint">提交後樣板將進入「審核中 (刪除申請)」狀態，待資料治理主管或 Admin 覆核通過後將正式移除。</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline btn-sm" id="btn-cancel-delete-modal">取消</button>
+        <button class="btn btn-danger btn-sm" id="delete-modal-confirm-btn">送出刪除申請</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container"></div>
 
   <!-- App Entry Point -->
-  <script type="module" src="js/app.js?v=2.4.1"></script>
+  <script type="module" src="js/app.js?v=2.5.3"></script>
 </body>
 
 </html>

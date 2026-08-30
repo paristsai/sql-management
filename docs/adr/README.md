@@ -15,6 +15,7 @@
 | [ADR 0005](0005-resizable-studio-layout-and-sensitive-column-governance.md) | Studio 彈性雙欄拖曳佈局與敏感個資覆寫治理架構 | Accepted | 2026-08-28 | `4bb289f`, `d1f08f9` | [Plan 0005](../plans/0005-resizable-studio-layout-and-sensitive-column-governance.md) |
 | [ADR 0006](0006-monaco-editor-syntax-highlight-decorations-and-toggle-architecture.md) | Monaco Editor 跨視圖 SQL 語法高亮裝飾器與動態標記切換架構 | Accepted | 2026-08-28 | `2b4efbb` | [Plan 0006](../plans/0006-monaco-editor-syntax-highlight-decorations-and-toggles.md) |
 | [ADR 0007](0007-sql-template-batch-import-export-and-multi-mode-preview.md) | SQL Template 批次匯入匯出與預覽工作台多模式架構設計 | Accepted | 2026-08-28 | `28da12a` | [Plan 0007](../plans/0007-batch-import-export-and-multi-mode-preview-workbench.md) |
+| [ADR 0008](0008-permission-governance-duplicate-and-deletion-audit-workflow.md) | SQL Template 權限治理體系、樣板複製與刪除審核流程架構設計 | Accepted | 2026-08-28 | - | [Plan 0008](../plans/0008-permission-governance-duplicate-and-deletion-audit-workflow.md) |
 
 ---
 
